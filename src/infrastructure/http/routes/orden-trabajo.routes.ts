@@ -12,6 +12,8 @@ import { ParteHorasService } from '../../../application/ordenes/parte-horas-serv
 import { parteHorasCreateSchema, parteHorasEnvelopeSchema, partesHorasEnvelopeSchema } from '../../../shared/schemas/parte-horas.schema.js';
 import { CostosDirectosService } from '../../../application/ordenes/costos-directos-service.js';
 import { contingenciaCreateSchema, contingenciaEnvelopeSchema, contingenciasEnvelopeSchema, costoDirectoCreateSchema, costoDirectoEnvelopeSchema, costosDirectosEnvelopeSchema } from '../../../shared/schemas/costos-directos.schema.js';
+import { InformeDesvioOrdenService } from '../../../application/ordenes/informe-desvio-orden-service.js';
+import { informeDesvioOrdenEnvelopeSchema } from '../../../shared/schemas/informe-desvio-orden.schema.js';
 
 const companyParams = z.object({ companyId: z.string().uuid() });
 const idParams = z.object({ id: z.string().uuid() });
@@ -36,6 +38,7 @@ export async function registerOrdenTrabajoRoutes(app: FastifyInstance): Promise<
   const presupuestos = new PresupuestoOrdenService();
   const partesHoras = new ParteHorasService();
   const costosDirectos = new CostosDirectosService();
+  const informesDesvio = new InformeDesvioOrdenService();
   const scopes = new OperatorScopeService();
   contract.post('/companies/:companyId/ordenes-trabajo', {
     preHandler: authenticate, schema: { body: ordenTrabajoCreateSchema, response: { 201: ordenTrabajoEnvelopeSchema, ...apiErrorResponses } },
@@ -70,6 +73,16 @@ export async function registerOrdenTrabajoRoutes(app: FastifyInstance): Promise<
     const { id } = idParams.parse(request.params);
     const tenantId = esOperador(request) ? await scopes.tenantForOrden(request.authUser!.id, id, 'ordenes.ver') : request.authUser!.id;
     return { data: await service.listStages(tenantId, id) };
+  });
+  contract.get('/ordenes-trabajo/:id/informe-desvio', {
+    preHandler: authenticate, schema: { response: { 200: informeDesvioOrdenEnvelopeSchema, ...apiErrorResponses } },
+  }, async (request) => {
+    const { id } = idParams.parse(request.params);
+    if (!esOperador(request)) return { data: await informesDesvio.get(request.authUser!.id, id) };
+    const tenantId = await scopes.tenantForOrden(request.authUser!.id, id, 'ordenes.ver');
+    const data = await informesDesvio.get(tenantId, id);
+    const canSeeMargin = await scopes.assertPermission(request.authUser!.id, 'ordenes.ver_margen').then(() => true, () => false);
+    return { data: canSeeMargin ? data : sinMargen(data) };
   });
   contract.post('/ordenes-trabajo/:id/transiciones', {
     preHandler: authenticate, schema: { body: ordenTrabajoTransitionSchema, response: { 200: ordenTrabajoEnvelopeSchema, ...apiErrorResponses } },

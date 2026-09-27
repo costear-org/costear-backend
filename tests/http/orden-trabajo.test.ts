@@ -126,6 +126,31 @@ describe('rutas de órdenes de trabajo', () => {
     expect(db.ordenTrabajo.update).not.toHaveBeenCalled();
   });
 
+  it('un usuario de planta pide el informe y recibe 403', async () => {
+    auth.role = 'EMPRESA_OPERATOR';
+    db.operatorOrdenTrabajo.findFirst.mockResolvedValue(null);
+    const api = await app();
+    const res = await api.inject({ method: 'GET', url: `/ordenes-trabajo/${ORDER}/informe-desvio` });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('un operador con acceso a la orden recibe el informe sin precio ni márgenes', async () => {
+    auth.role = 'EMPRESA_OPERATOR';
+    db.operatorOrdenTrabajo.findFirst.mockResolvedValue({ orden: { userId: USER } });
+    db.operatorMembership.findFirst.mockResolvedValue(null);
+    db.ordenTrabajo.findFirst.mockResolvedValue({
+      id: ORDER, estado: 'EN_PRODUCCION', presupuestos: [], movimientosInventario: [], movimientosDestino: [],
+      partesHoras: [], costosDirectos: [], aplicacionesIndirectos: [],
+    });
+    const api = await app();
+    const res = await api.inject({ method: 'GET', url: `/ordenes-trabajo/${ORDER}/informe-desvio` });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().data).not.toHaveProperty('precioContractual');
+    expect(res.json().data).not.toHaveProperty('margenEsperado');
+    expect(res.json().data).not.toHaveProperty('margenReal');
+    expect(res.json().data).toMatchObject({ costoReal: 0, desvioTotal: 0 });
+  });
+
   it('aprobar un presupuesto vencido responde 400 tipado, no 500', async () => {
     db.versionPresupuesto.findFirst.mockResolvedValue({
       id: ORDER, userId: USER, estado: 'PREPARADO', preparadoPor: COMPANY,

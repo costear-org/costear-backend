@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { OrdenTrabajoService } from '@/application/ordenes/orden-trabajo-service.js';
 import { ParteHorasService } from '@/application/ordenes/parte-horas-service.js';
 import { CostosDirectosService } from '@/application/ordenes/costos-directos-service.js';
+import { InformeDesvioOrdenService } from '@/application/ordenes/informe-desvio-orden-service.js';
 import { prisma, withTenant } from '@/infrastructure/database/prisma.js';
 import { randomUUID } from 'node:crypto';
 import { createTenant, disconnect, type Tenant } from './helpers/tenants.js';
@@ -14,6 +15,19 @@ beforeAll(async () => { A = await createTenant('orden-a'); B = await createTenan
 afterAll(disconnect);
 
 describe('FX-OT — orden de trabajo con RLS real', () => {
+  it('aísla el informe por RLS y no inventa importes cuando todavía no hay hechos', async () => {
+    const orders = new OrdenTrabajoService();
+    const reports = new InformeDesvioOrdenService();
+    const order = await orders.create(A.userId, A.companyId, {
+      codigo: `OT-INF-${randomUUID().slice(0, 8)}`, descripcion: 'Obra X', cliente: 'Cliente ficticio', plantillaId: null, fechaInicio: null,
+    }, actor(A.userId));
+
+    await expect(reports.get(A.userId, order.id)).resolves.toMatchObject({
+      ordenId: order.id, costoPresupuestado: 0, costoReal: 0, desvioTotal: 0,
+    });
+    await expect(reports.get(B.userId, order.id)).rejects.toMatchObject({ statusCode: 404 });
+  });
+
   it('aísla costos directos y contingencias y mantiene pendiente fuera del costo', async () => {
     const orders = new OrdenTrabajoService();
     const costs = new CostosDirectosService();
