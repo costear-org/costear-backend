@@ -28,6 +28,7 @@ import { registerValidacionesRoutes } from '../src/infrastructure/http/routes/va
 import { registerTelemetriaPanelRoutes } from '../src/infrastructure/http/routes/telemetria-panel.routes.js';
 import { registerPriceIndexRoutes } from '../src/infrastructure/http/routes/price-index.routes.js';
 import { registerModulosRubroRoutes } from '../src/infrastructure/http/routes/modulos-rubro.routes.js';
+import { registerPaqueteRubroRoutes } from '../src/infrastructure/http/routes/paquete-rubro.routes.js';
 import { registerMacroRoutes } from '../src/infrastructure/http/routes/macro.routes.js';
 import { registerConceptoCosteoRoutes } from '../src/infrastructure/http/routes/concepto-costeo.routes.js';
 import { registerUserPreferencesRoutes } from '../src/infrastructure/http/routes/user-preferences.routes.js';
@@ -60,6 +61,7 @@ const CONVERTED_ROUTES = [
   registerTelemetriaPanelRoutes,
   registerPriceIndexRoutes,
   registerModulosRubroRoutes,
+  registerPaqueteRubroRoutes,
   registerMacroRoutes,
   registerConceptoCosteoRoutes,
   registerUserPreferencesRoutes,

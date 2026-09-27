@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PaqueteRubroService } from '@/application/operacion/paquete-rubro-service.js';
+import { NotFoundError } from '@/domain/errors/domain-error.js';
 import { withTenant } from '@/infrastructure/database/prisma.js';
 import { createTenant, disconnect, type Tenant } from './helpers/tenants.js';
 
@@ -40,5 +41,19 @@ describe('A-16 — paquete de rubro y cascada', () => {
   it('aísla los paquetes por usuario mediante RLS', async () => {
     const rows = await withTenant(B.userId, (tx) => tx.paqueteRubro.findMany({ where: { userId: A.userId } }));
     expect(rows).toEqual([]);
+  });
+
+  it('resuelve el léxico por empresa y no permite consultar una empresa de otro tenant', async () => {
+    await withTenant(A.userId, (tx) => tx.company.update({
+      where: { id: A.companyId },
+      data: { industry: 'TEST' },
+    }));
+    const service = new PaqueteRubroService();
+
+    await expect(service.resolveCompanyLexicon(A.userId, A.companyId)).resolves.toEqual({
+      category: 'TEST',
+      lexicon: { UnidadProductiva: 'Empresa' },
+    });
+    await expect(service.resolveCompanyLexicon(B.userId, A.companyId)).rejects.toBeInstanceOf(NotFoundError);
   });
 });

@@ -57,6 +57,7 @@ import { registerTelegramRoutes } from './routes/telegram.routes.js';
 import { registerTermsRoutes } from './routes/terms.routes.js';
 import { registerIndustryProfileRoutes } from './routes/industry-profile.routes.js';
 import { registerModulosRubroRoutes } from './routes/modulos-rubro.routes.js';
+import { registerPaqueteRubroRoutes } from './routes/paquete-rubro.routes.js';
 import { registerTelemetriaPanelRoutes } from './routes/telemetria-panel.routes.js';
 import { registerPriceIndexRoutes } from './routes/price-index.routes.js';
 import { registerClassifierAiCostRoutes } from './routes/classifier-ai-cost.routes.js';
@@ -229,6 +230,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       await registerParametrosCosteoRoutes(api);
       await registerConceptoCosteoRoutes(api);
       await registerModulosRubroRoutes(api);
+      await registerPaqueteRubroRoutes(api);
       await registerTelemetriaPanelRoutes(api);
       await registerPriceIndexRoutes(api);
       await registerClassifierAiCostRoutes(api);
