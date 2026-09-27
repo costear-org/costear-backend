@@ -70,6 +70,7 @@ adelante todo va a esta carpeta, un archivo por decisión.
 
 <!-- Se agrega una línea por ADR. Más reciente arriba. -->
 
+- [0037 — Declarar las acciones operativas en el paquete](./0037-declarar-acciones-operativas-en-el-paquete.md) — 27-09-2026 · **Aceptada**. El catálogo del cargador expande acciones declaradas por el paquete sólo sobre entidades autorizadas.
 - [0026 — La moneda homogénea usa snapshots completos y explícitos](./0026-moneda-homogenea-versionada.md) — 20-09-2026 · **Propuesta**. Cada corrección crea un snapshot auditable; sin todos los índices el cálculo queda nominal y lo declara.
 - [0025 — Las alertas distinguen ausencia de normalidad](./0025-alertas-distinguen-ausencia-de-normalidad.md) — 19-09-2026 · **Propuesta**. El contrato diferencia normalidad, inactividad y datos faltantes antes de generar alertas en app o email.
 - [0015 — Proyectar resultados en la unidad de gestión](./0015-proyectar-resultados-en-unidad-de-gestion.md) — 11-09-2026 · **Aceptada**. El motor persiste en base y una sola abstracción de dominio proyecta la salida sin inferir unidades.

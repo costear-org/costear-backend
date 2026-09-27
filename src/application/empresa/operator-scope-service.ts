@@ -2,6 +2,8 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '../../infrastructure/database/prisma.js';
 import { ForbiddenError, NotFoundError } from '../../domain/errors/domain-error.js';
 import { recordTraceAudit, type TraceActor } from '../audit/trace-audit.js';
+import { CATEGORY_BY_INDUSTRY, PAQUETE_AVICOLA_POSTURA } from '../operacion/paquete-avicola.js';
+import { CATEGORIA_CONSTRUCCION_MODULAR, PAQUETE_CONSTRUCCION_MODULAR } from '../operacion/paquete-construccion-modular.js';
 
 export interface OperatorScopeInput {
   unidadProductivaIds: string[];
@@ -18,8 +20,150 @@ export type PermisoOperador = typeof PERMISOS_OPERADOR[number];
 export const esPermisoOperador = (value: string): value is PermisoOperador =>
   (PERMISOS_OPERADOR as readonly string[]).includes(value);
 
+type TipoEntidadOperativa = 'UnidadProductiva' | 'Deposito';
+interface AccionCargaPaquete {
+  moduloId: string;
+  clave: string;
+  nombre: string;
+  descripcion: string;
+  superficie: string;
+  destino: string;
+  entidadDestino: TipoEntidadOperativa;
+  permiso?: PermisoOperador;
+}
+
+function esAccionCarga(value: unknown): value is AccionCargaPaquete {
+  if (!value || typeof value !== 'object') return false;
+  const action = value as Partial<AccionCargaPaquete>;
+  return typeof action.moduloId === 'string' && typeof action.clave === 'string' && typeof action.nombre === 'string' &&
+    typeof action.descripcion === 'string' && typeof action.superficie === 'string' &&
+    typeof action.destino === 'string' &&
+    (action.entidadDestino === 'UnidadProductiva' || action.entidadDestino === 'Deposito') &&
+    (action.permiso === undefined || esPermisoOperador(action.permiso));
+}
+
+const paqueteCanonico = (category: string) => {
+  if (category === 'AVICOLA_POSTURA') return PAQUETE_AVICOLA_POSTURA;
+  if (category === CATEGORIA_CONSTRUCCION_MODULAR) return PAQUETE_CONSTRUCCION_MODULAR;
+  return undefined;
+};
+
 export class OperatorScopeService {
   constructor(private readonly db: PrismaClient = prisma) {}
+
+  private async paquete(userId: string, companyId: string, industry: string | null) {
+    const category = industry
+      ? CATEGORY_BY_INDUSTRY[industry as keyof typeof CATEGORY_BY_INDUSTRY] ?? industry
+      : undefined;
+    if (!category) return {
+      lexicon: {} as Record<string, unknown>,
+      accionesCarga: [] as AccionCargaPaquete[],
+      defaults: new Map<string, boolean>(),
+    };
+    const rows = await this.db.paqueteRubro.findMany({
+      where: {
+        category,
+        OR: [{ userId: null }, { userId }],
+        AND: [{ OR: [{ companyId: null }, { companyId }] }, { structureId: null }, { periodId: null }],
+      },
+    });
+    const rank = (row: { companyId?: string | null; userId?: string | null }) =>
+      (row.companyId ? 2 : 0) + (row.userId ? 1 : 0);
+    const resolved = [...rows].sort((a, b) => rank(a) - rank(b)).reduce<Record<string, unknown>>((result, row) => {
+      const next = { ...result, lexicon: row.lexicon, modulos: row.modulos };
+      return row.access === null ? next : { ...next, access: row.access };
+    }, {});
+    const canonical = paqueteCanonico(category);
+    const lexicon = (resolved.lexicon ?? canonical?.lexicon ?? {}) as Record<string, unknown>;
+    const access = resolved.access && typeof resolved.access === 'object' && !Array.isArray(resolved.access)
+      ? resolved.access as Record<string, unknown>
+      : {};
+    const canonicalAccess = canonical?.access as { actions?: readonly unknown[] } | undefined;
+    const declared = Array.isArray(access.actions) ? access.actions.filter(esAccionCarga) : [];
+    const fallback = canonicalAccess?.actions?.filter(esAccionCarga) ?? [];
+    const modulos = Array.isArray(resolved.modulos) ? resolved.modulos : canonical?.modulos ?? [];
+    const defaults = new Map(modulos.flatMap((value) => {
+      if (!value || typeof value !== 'object') return [];
+      const modulo = value as { clave?: unknown; activoPorDefecto?: unknown };
+      return typeof modulo.clave === 'string' && typeof modulo.activoPorDefecto === 'boolean'
+        ? [[modulo.clave, modulo.activoPorDefecto] as const]
+        : [];
+    }));
+    return { lexicon, accionesCarga: declared.length ? declared : fallback, defaults };
+  }
+
+  async listAssignableEntities(companyId: string, administratorId: string) {
+    const company = await this.db.company.findFirst({
+      where: { id: companyId, userId: administratorId, isActive: true },
+      select: { id: true, industry: true },
+    });
+    if (!company) throw new NotFoundError('Negocio no encontrado');
+    const [unidades, depositos, paquete] = await Promise.all([
+      this.db.unidadProductiva.findMany({
+        where: { companyId, activa: true, deletedAt: null }, select: { id: true, referencia: true }, orderBy: { referencia: 'asc' },
+      }),
+      this.db.deposito.findMany({
+        where: { companyId, deletedAt: null }, select: { id: true, referencia: true }, orderBy: { referencia: 'asc' },
+      }),
+      this.paquete(administratorId, companyId, company.industry),
+    ]);
+    const unidadLabel = typeof paquete.lexicon.UnidadProductiva === 'string' ? paquete.lexicon.UnidadProductiva : 'Unidad productiva';
+    const depositoLabel = typeof paquete.lexicon.Deposito === 'string' ? paquete.lexicon.Deposito : 'Depósito';
+    return {
+      unidadesProductivas: unidades.map((item) => ({ ...item, etiqueta: unidadLabel })),
+      depositos: depositos.map((item) => ({ ...item, etiqueta: depositoLabel })),
+    };
+  }
+
+  async listOperationalCatalog(operatorId: string, connectionId: string) {
+    const membership = await this.db.operatorMembership.findFirst({
+      where: { operatorId, connectionId, isActive: true },
+      select: {
+        permisos: true,
+        connection: { select: { id: true, costistId: true, companyId: true, company: { select: { industry: true } } } },
+        unidadesAutorizadas: { select: { unidadProductiva: { select: { id: true, referencia: true } } } },
+        depositosAutorizados: { select: { deposito: { select: { id: true, referencia: true } } } },
+      },
+    });
+    if (!membership) throw new NotFoundError('Conexión de empresa no encontrada');
+    if (!membership.unidadesAutorizadas.length && !membership.depositosAutorizados.length) {
+      return {
+        estado: 'sin_entidades_autorizadas' as const,
+        mensaje: 'Todavía no te asignaron ninguna entidad para cargar datos.',
+        acciones: [],
+      };
+    }
+    const paquete = await this.paquete(
+      membership.connection.costistId,
+      membership.connection.companyId,
+      membership.connection.company.industry,
+    );
+    const configuraciones = await this.db.configuracionModuloRubro.findMany({
+      where: { companyId: membership.connection.companyId }, select: { moduleId: true, activo: true },
+    });
+    const estados = new Map(configuraciones.map((item) => [item.moduleId, item.activo]));
+    const accionesActivas = paquete.accionesCarga.filter((action) => {
+      const activo = estados.get(action.moduloId) ?? paquete.defaults.get(action.moduloId) ?? false;
+      return activo && (!action.permiso || membership.permisos.includes(action.permiso));
+    });
+    const labels: Record<TipoEntidadOperativa, string> = {
+      UnidadProductiva: typeof paquete.lexicon.UnidadProductiva === 'string' ? paquete.lexicon.UnidadProductiva : 'Unidad productiva',
+      Deposito: typeof paquete.lexicon.Deposito === 'string' ? paquete.lexicon.Deposito : 'Depósito',
+    };
+    const entidades = {
+      UnidadProductiva: membership.unidadesAutorizadas.map((item) => item.unidadProductiva),
+      Deposito: membership.depositosAutorizados.map((item) => item.deposito),
+    };
+    const acciones = accionesActivas.flatMap((action) => entidades[action.entidadDestino].map((entidad) => ({
+      clave: action.clave,
+      nombre: action.nombre,
+      descripcion: action.descripcion,
+      superficie: action.superficie,
+      destino: action.destino,
+      entidad: { tipo: action.entidadDestino, ...entidad, etiqueta: labels[action.entidadDestino] },
+    })));
+    return { estado: 'disponible' as const, mensaje: null, acciones };
+  }
 
   async assertUnidad(operatorId: string, unidadProductivaId: string, actor?: TraceActor): Promise<void> {
     const allowed = await this.db.operatorUnidadProductiva.findFirst({

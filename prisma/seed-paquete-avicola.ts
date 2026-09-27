@@ -19,6 +19,7 @@ export async function seedPaqueteAvicola(db: PrismaClient = prisma) {
         nombreProducto: PAQUETE_AVICOLA_POSTURA.nombreProducto,
         nombreProductoConfirmado: PAQUETE_AVICOLA_POSTURA.nombreProductoConfirmado,
         icons: PAQUETE_AVICOLA_POSTURA.icons,
+        access: PAQUETE_AVICOLA_POSTURA.access,
         variants: PAQUETE_AVICOLA_POSTURA.variants,
         seedParameters: PAQUETE_AVICOLA_POSTURA.seedParameters,
         alertRules: PAQUETE_AVICOLA_POSTURA.alertRules,

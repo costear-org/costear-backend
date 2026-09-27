@@ -2,6 +2,65 @@
 
 exports[`paquete avícola de postura > declara léxico, variantes sin confirmar, parámetros sin confirmar y reglas configurables 1`] = `
 {
+  "access": {
+    "actions": [
+      {
+        "clave": "registrar-produccion",
+        "descripcion": "Registrá lo que produjo la unidad durante el día.",
+        "destino": "/panel-campo",
+        "entidadDestino": "UnidadProductiva",
+        "moduloId": "produccion",
+        "nombre": "Registrar producción diaria",
+        "superficie": "carga.produccion-diaria",
+      },
+      {
+        "clave": "registrar-bajas",
+        "descripcion": "Registrá bajas y otros eventos del plantel.",
+        "destino": "/panel-campo",
+        "entidadDestino": "UnidadProductiva",
+        "moduloId": "plantel",
+        "nombre": "Registrar bajas del plantel",
+        "superficie": "carga.bajas-plantel",
+      },
+      {
+        "clave": "registrar-deposito",
+        "descripcion": "Registrá ingresos y egresos del depósito.",
+        "destino": "/panel-campo",
+        "entidadDestino": "Deposito",
+        "moduloId": "depositos",
+        "nombre": "Registrar movimiento de depósito",
+        "permiso": "inventario.mover",
+        "superficie": "carga.depositos",
+      },
+      {
+        "clave": "registrar-alimento",
+        "descripcion": "Registrá elaboración y consumo de alimento.",
+        "destino": "/panel-campo",
+        "entidadDestino": "UnidadProductiva",
+        "moduloId": "alimento",
+        "nombre": "Registrar alimento propio",
+        "superficie": "carga.alimento-propio",
+      },
+      {
+        "clave": "registrar-peso",
+        "descripcion": "Registrá un muestreo de peso del plantel.",
+        "destino": "/panel-campo",
+        "entidadDestino": "UnidadProductiva",
+        "moduloId": "peso",
+        "nombre": "Registrar muestreo de peso",
+        "superficie": "carga.muestreo-peso",
+      },
+      {
+        "clave": "registrar-desperdicio",
+        "descripcion": "Registrá mermas de la unidad productiva.",
+        "destino": "/panel-campo",
+        "entidadDestino": "UnidadProductiva",
+        "moduloId": "desperdicio",
+        "nombre": "Registrar desperdicio",
+        "superficie": "carga.desperdicio",
+      },
+    ],
+  },
   "alertRules": [
     {
       "condicion": "MENOR",

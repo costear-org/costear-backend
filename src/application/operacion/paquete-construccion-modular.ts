@@ -18,6 +18,9 @@ export const PAQUETE_CONSTRUCCION_MODULAR = {
       'ordenes.ver', 'ordenes.editar', 'ordenes.ver_margen', 'ordenes.aprobar_presupuesto',
       'ordenes.cerrar', 'inventario.mover', 'horas.cargar', 'horas.aprobar',
     ],
+    actions: [
+      { moduloId: 'inventario', clave: 'mover-inventario', nombre: 'Registrar movimiento de inventario', descripcion: 'Registrá ingresos, salidas, devoluciones o transferencias.', superficie: 'carga.inventario', destino: '/inventario', entidadDestino: 'Deposito', permiso: 'inventario.mover' },
+    ],
   },
   variants: [
     { codigo: 'modulo_20_pies', etiqueta: 'Módulo de 20 pies', confirmado: false },

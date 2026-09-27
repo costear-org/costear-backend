@@ -17,6 +17,16 @@ export const PAQUETE_AVICOLA_POSTURA = {
     CorridaProduccion: 'Bachada',
   },
   icons: { UnidadProductiva: 'warehouse', LoteProductivo: 'bird', Deposito: 'container', CorridaProduccion: 'flask' },
+  access: {
+    actions: [
+      { moduloId: 'produccion', clave: 'registrar-produccion', nombre: 'Registrar producción diaria', descripcion: 'Registrá lo que produjo la unidad durante el día.', superficie: 'carga.produccion-diaria', destino: '/panel-campo', entidadDestino: 'UnidadProductiva' },
+      { moduloId: 'plantel', clave: 'registrar-bajas', nombre: 'Registrar bajas del plantel', descripcion: 'Registrá bajas y otros eventos del plantel.', superficie: 'carga.bajas-plantel', destino: '/panel-campo', entidadDestino: 'UnidadProductiva' },
+      { moduloId: 'depositos', clave: 'registrar-deposito', nombre: 'Registrar movimiento de depósito', descripcion: 'Registrá ingresos y egresos del depósito.', superficie: 'carga.depositos', destino: '/panel-campo', entidadDestino: 'Deposito', permiso: 'inventario.mover' },
+      { moduloId: 'alimento', clave: 'registrar-alimento', nombre: 'Registrar alimento propio', descripcion: 'Registrá elaboración y consumo de alimento.', superficie: 'carga.alimento-propio', destino: '/panel-campo', entidadDestino: 'UnidadProductiva' },
+      { moduloId: 'peso', clave: 'registrar-peso', nombre: 'Registrar muestreo de peso', descripcion: 'Registrá un muestreo de peso del plantel.', superficie: 'carga.muestreo-peso', destino: '/panel-campo', entidadDestino: 'UnidadProductiva' },
+      { moduloId: 'desperdicio', clave: 'registrar-desperdicio', nombre: 'Registrar desperdicio', descripcion: 'Registrá mermas de la unidad productiva.', superficie: 'carga.desperdicio', destino: '/panel-campo', entidadDestino: 'UnidadProductiva' },
+    ],
+  },
   // La cantidad de variantes sigue pendiente de confirmación. Son etiquetas
   // provisionales de paquete, no una afirmación sobre ningún cliente.
   variants: [

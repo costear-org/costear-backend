@@ -26,6 +26,7 @@ const scopeSchema = z.object({
 });
 const companyOperatorParams = z.object({ companyId: z.string().uuid(), operatorId: z.string().uuid() });
 const companyParams = z.object({ companyId: z.string().uuid() });
+const connectionParams = z.object({ connectionId: z.string().uuid() });
 const operatorParams = z.object({ operatorId: z.string().uuid() });
 const successEnvelope = z.object({ data: z.object({ success: z.boolean() }) });
 const inviteEnvelope = z.object({ data: z.object({
@@ -41,6 +42,21 @@ const operatorListEnvelope = z.object({ data: z.array(z.object({
   }),
   permisos: z.array(z.enum(PERMISOS_OPERADOR)),
 })) });
+const scopedEntitySchema = z.object({
+  id: z.string().uuid(), referencia: z.string(), etiqueta: z.string(),
+});
+const assignableEntitiesEnvelope = z.object({ data: z.object({
+  unidadesProductivas: z.array(scopedEntitySchema),
+  depositos: z.array(scopedEntitySchema),
+}) });
+const operationalCatalogEnvelope = z.object({ data: z.object({
+  estado: z.enum(['disponible', 'sin_entidades_autorizadas']),
+  mensaje: z.string().nullable(),
+  acciones: z.array(z.object({
+    clave: z.string(), nombre: z.string(), descripcion: z.string(), superficie: z.string(), destino: z.string(),
+    entidad: scopedEntitySchema.extend({ tipo: z.enum(['UnidadProductiva', 'Deposito']) }),
+  })),
+}) });
 
 const submitDocSchema = z.object({
   rawContent: z.string().max(10_000).default(''),
@@ -98,6 +114,16 @@ export async function registerEmpresaPortalRoutes(
     },
   );
 
+  contract.get(
+    '/empresa-portal/:companyId/assignable-entities',
+    { preHandler: [authenticate, requireRole('EMPRESA_ADMIN', 'EMPRESARIO')], schema: {
+      params: companyParams, response: { 200: assignableEntitiesEnvelope, ...apiErrorResponses },
+    } },
+    async (request, reply) => reply.send({
+      data: await scopes.listAssignableEntities(request.params.companyId, request.authUser!.id),
+    }),
+  );
+
   // ── Costista: revocar operador ─────────────────────────────────────────────
   contract.delete(
     '/empresa-portal/operators/:operatorId',
@@ -124,6 +150,16 @@ export async function registerEmpresaPortalRoutes(
       });
       return reply.send({ data: { success: true } });
     },
+  );
+
+  contract.get(
+    '/empresa-portal/connections/:connectionId/operational-catalog',
+    { preHandler: [authenticate, requireRole('EMPRESA_OPERATOR')], schema: {
+      params: connectionParams, response: { 200: operationalCatalogEnvelope, ...apiErrorResponses },
+    } },
+    async (request, reply) => reply.send({
+      data: await scopes.listOperationalCatalog(request.authUser!.id, request.params.connectionId),
+    }),
   );
 
   // ── Costista: resetear contraseña de un operador ──────────────────────────
