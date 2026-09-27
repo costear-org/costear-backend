@@ -769,6 +769,26 @@ CREATE POLICY tenant_isolation ON eventos_contingencia
   USING ("userId" = current_app_user_id())
   WITH CHECK ("userId" = current_app_user_id());
 
+ALTER TABLE pools_indirectos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pools_indirectos FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON pools_indirectos;
+CREATE POLICY tenant_isolation ON pools_indirectos USING ("userId" = current_app_user_id()) WITH CHECK ("userId" = current_app_user_id());
+
+ALTER TABLE costos_reales_pool ENABLE ROW LEVEL SECURITY;
+ALTER TABLE costos_reales_pool FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON costos_reales_pool;
+CREATE POLICY tenant_isolation ON costos_reales_pool USING ("userId" = current_app_user_id()) WITH CHECK ("userId" = current_app_user_id());
+
+ALTER TABLE corridas_asignacion_pool ENABLE ROW LEVEL SECURITY;
+ALTER TABLE corridas_asignacion_pool FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON corridas_asignacion_pool;
+CREATE POLICY tenant_isolation ON corridas_asignacion_pool USING ("userId" = current_app_user_id()) WITH CHECK ("userId" = current_app_user_id());
+
+ALTER TABLE aplicaciones_corrida_pool ENABLE ROW LEVEL SECURITY;
+ALTER TABLE aplicaciones_corrida_pool FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON aplicaciones_corrida_pool;
+CREATE POLICY tenant_isolation ON aplicaciones_corrida_pool USING ("userId" = current_app_user_id()) WITH CHECK ("userId" = current_app_user_id());
+
 ALTER TABLE desperdicio_registros ENABLE ROW LEVEL SECURITY;
 ALTER TABLE desperdicio_registros FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON desperdicio_registros;

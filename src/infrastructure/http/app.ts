@@ -68,6 +68,7 @@ import { registerRelacionReemplazoRoutes } from './routes/relacion-reemplazo.rou
 import { registerMezclaOptimaRoutes } from './routes/mezcla-optima.routes.js';
 import { registerPrecioTransferenciaRoutes } from './routes/precio-transferencia.routes.js';
 import { registerOrdenTrabajoRoutes } from './routes/orden-trabajo.routes.js';
+import { registerPoolIndirectoRoutes } from './routes/pool-indirecto.routes.js';
 import { createCorsOriginHandler } from './cors-policy.js';
 
 /**
@@ -239,6 +240,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       await registerMezclaOptimaRoutes(api);
       await registerPrecioTransferenciaRoutes(api);
       await registerOrdenTrabajoRoutes(api);
+      await registerPoolIndirectoRoutes(api);
       await registerActivoAmortizableRoutes(api);
       await registerEventosLoteRoutes(api);
       await registerLotesProductivosRoutes(api);

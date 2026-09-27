@@ -45,6 +45,7 @@ import { registerMezclaOptimaRoutes } from '../src/infrastructure/http/routes/me
 import { registerPrecioTransferenciaRoutes } from '../src/infrastructure/http/routes/precio-transferencia.routes.js';
 import { registerOrdenTrabajoRoutes } from '../src/infrastructure/http/routes/orden-trabajo.routes.js';
 import { registerInventarioRoutes } from '../src/infrastructure/http/routes/inventario.routes.js';
+import { registerPoolIndirectoRoutes } from '../src/infrastructure/http/routes/pool-indirecto.routes.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
@@ -75,6 +76,7 @@ const CONVERTED_ROUTES = [
   registerPrecioTransferenciaRoutes,
   registerOrdenTrabajoRoutes,
   registerInventarioRoutes,
+  registerPoolIndirectoRoutes,
   (app) => registerEmpresaPortalRoutes(app, { portal: {} as never, scopes: {} as never }),
 ];
 

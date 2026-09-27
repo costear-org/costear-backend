@@ -213,8 +213,9 @@ enum CondicionIva {
 }
 
 model Company {
+  poolsIndirectos          PoolIndirecto[]
   articulos                Articulo[]
-  movimientosInventario   MovimientoInventario[]
+  movimientosInventario    MovimientoInventario[]
   ordenesTrabajo           OrdenTrabajo[]
   plantillasOrden          PlantillaOrden[]
   classifierAiCalls        ClassifierAiCall[]
@@ -280,12 +281,12 @@ model Company {
   // base: el prompt de la IA dice "Asumí Responsable Inscripto por defecto" y
   // `ledger-builder` costeaba sobre el neto sin preguntar. Cualquier otro
   // default revaluaría en silencio datos vivos. Ver DECISIONES.md (CL-09).
-  condicionIva CondicionIva @default(RESPONSABLE_INSCRIPTO)
-  politicaPpp PoliticaPpp @default(MOVIL)
+  condicionIva                 CondicionIva                 @default(RESPONSABLE_INSCRIPTO)
+  politicaPpp                  PoliticaPpp                  @default(MOVIL)
   politicaDevolucionInventario PoliticaDevolucionInventario @default(COSTO_SALIDA)
-  politicaPrimaExtra PoliticaPrimaExtra @default(DENTRO_DE_TARIFA)
-  politicaRetrabajo PoliticaRetrabajo @default(CIF_POOL)
-  tarifasManoObra TarifaManoObra[]
+  politicaPrimaExtra           PoliticaPrimaExtra           @default(DENTRO_DE_TARIFA)
+  politicaRetrabajo            PoliticaRetrabajo            @default(CIF_POOL)
+  tarifasManoObra              TarifaManoObra[]
 
   // Señal de la IA: el comprobante mostró indicios ("Factura C", "Consumidor
   // Final", "Monotributista", "Responsable No Inscripto") de que la condición
@@ -331,6 +332,7 @@ enum EstadoValidacionOrden {
   VALIDADO
   MARCADO
 }
+
 enum CategoriaCostoDirectoOrden {
   TERCEROS
   TRANSPORTE
@@ -339,6 +341,7 @@ enum CategoriaCostoDirectoOrden {
   COMPRA_EXCLUSIVA
   OTRO
 }
+
 enum TipoEventoContingencia {
   DESPERDICIO
   SOBRANTE
@@ -346,6 +349,7 @@ enum TipoEventoContingencia {
   FALLA
   RETRABAJO
 }
+
 enum PoliticaRetrabajo {
   CIF_POOL
   PERDIDA_PERIODO
@@ -356,35 +360,140 @@ enum PoliticaRetrabajo {
 /// períodos. Los hechos conservan su propio `periodoImputado`: la orden no
 /// pertenece a un período.
 model OrdenTrabajo {
-  id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  companyId             String                 @db.Uuid
-  company               Company                @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  userId                String                 @db.Uuid
-  codigo                String                 @db.VarChar(80)
-  descripcion           String                 @db.VarChar(500)
-  cliente               String                 @db.VarChar(200)
-  plantillaId           String?                @db.Uuid
-  plantilla             PlantillaOrden?        @relation(fields: [plantillaId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  renglonesBase         Json                   @default("[]")
-  etapas                EtapaOrden[]
-  presupuestos          VersionPresupuesto[]
-  movimientosInventario MovimientoInventario[] @relation("OrdenMovimientoInventario")
-  movimientosDestino    MovimientoInventario[] @relation("OrdenDestinoMovimientoInventario")
-  operadoresAutorizados OperatorOrdenTrabajo[]
-  partesHoras           ParteHoras[]
-  costosDirectos        CostoDirectoOrden[]
-  contingencias         EventoContingencia[]
-  estado                EstadoOrdenTrabajo     @default(BORRADOR)
-  fechaInicio           DateTime?              @db.Date
-  fechaFinTecnica       DateTime?              @db.Timestamptz
-  fechaCierre           DateTime?              @db.Timestamptz
-  createdAt             DateTime               @default(now()) @db.Timestamptz
-  updatedAt             DateTime               @updatedAt @db.Timestamptz
+  id                     String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId              String                  @db.Uuid
+  company                Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId                 String                  @db.Uuid
+  codigo                 String                  @db.VarChar(80)
+  descripcion            String                  @db.VarChar(500)
+  cliente                String                  @db.VarChar(200)
+  plantillaId            String?                 @db.Uuid
+  plantilla              PlantillaOrden?         @relation(fields: [plantillaId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  renglonesBase          Json                    @default("[]")
+  etapas                 EtapaOrden[]
+  presupuestos           VersionPresupuesto[]
+  movimientosInventario  MovimientoInventario[]  @relation("OrdenMovimientoInventario")
+  movimientosDestino     MovimientoInventario[]  @relation("OrdenDestinoMovimientoInventario")
+  operadoresAutorizados  OperatorOrdenTrabajo[]
+  partesHoras            ParteHoras[]
+  costosDirectos         CostoDirectoOrden[]
+  contingencias          EventoContingencia[]
+  aplicacionesIndirectos AplicacionCorridaPool[]
+  estado                 EstadoOrdenTrabajo      @default(BORRADOR)
+  fechaInicio            DateTime?               @db.Date
+  fechaFinTecnica        DateTime?               @db.Timestamptz
+  fechaCierre            DateTime?               @db.Timestamptz
+  createdAt              DateTime                @default(now()) @db.Timestamptz
+  updatedAt              DateTime                @updatedAt @db.Timestamptz
 
   @@unique([companyId, codigo])
   @@index([userId])
   @@index([companyId, estado])
   @@map("ordenes_trabajo")
+}
+
+enum TipoPoolIndirecto {
+  FABRIL
+  ADMINISTRACION
+  COMERCIALIZACION
+}
+
+enum BasePoolIndirecto {
+  HORAS_HOMBRE
+  HORAS_MAQUINA
+  SUPERFICIE
+  DIAS_OCUPACION
+  MOVIMIENTOS
+  OTRA
+}
+
+enum NaturalezaCostoRealPool {
+  FIJO
+  VARIABLE
+}
+
+model PoolIndirecto {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId           String                  @db.Uuid
+  company             Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId              String                  @db.Uuid
+  nombre              String                  @db.VarChar(160)
+  tipo                TipoPoolIndirecto
+  base                BasePoolIndirecto
+  presupuestoFijo     Decimal                 @db.Decimal(18, 4)
+  presupuestoVariable Decimal                 @db.Decimal(18, 4)
+  capacidadNormal     Decimal                 @db.Decimal(18, 4)
+  periodo             String                  @db.VarChar(7)
+  costosReales        CostoRealPool[]
+  corridas            CorridaAsignacionPool[]
+  createdAt           DateTime                @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([companyId, periodo])
+  @@map("pools_indirectos")
+}
+
+model CostoRealPool {
+  id           String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  poolId       String                  @db.Uuid
+  pool         PoolIndirecto           @relation(fields: [poolId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  userId       String                  @db.Uuid
+  periodo      String                  @db.VarChar(7)
+  concepto     String                  @db.VarChar(200)
+  naturaleza   NaturalezaCostoRealPool
+  importe      Decimal                 @db.Decimal(18, 4)
+  origen       String                  @db.VarChar(500)
+  reemplazaAId String?                 @unique @db.Uuid
+  reemplazaA   CostoRealPool?          @relation("ReemplazoCostoRealPool", fields: [reemplazaAId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  reemplazos   CostoRealPool[]         @relation("ReemplazoCostoRealPool")
+  createdAt    DateTime                @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([poolId, periodo, concepto, createdAt])
+  @@map("costos_reales_pool")
+}
+
+model CorridaAsignacionPool {
+  id                   String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  poolId               String                  @db.Uuid
+  pool                 PoolIndirecto           @relation(fields: [poolId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  userId               String                  @db.Uuid
+  periodo              String                  @db.VarChar(7)
+  tasaFija             Decimal                 @db.Decimal(18, 8)
+  tasaVariable         Decimal                 @db.Decimal(18, 8)
+  tasaTotal            Decimal                 @db.Decimal(18, 8)
+  cifReal              Decimal                 @db.Decimal(18, 4)
+  cifRealFijo          Decimal                 @db.Decimal(18, 4)
+  cifRealVariable      Decimal                 @db.Decimal(18, 4)
+  variacionPresupuesto Decimal                 @db.Decimal(18, 4)
+  variacionVolumen     Decimal                 @db.Decimal(18, 4)
+  sentidoPresupuesto   String                  @db.VarChar(20)
+  sentidoVolumen       String                  @db.VarChar(20)
+  formula              String                  @db.Text
+  versionMotor         String                  @db.VarChar(40)
+  costosRealesUsados   String[]                @db.Uuid
+  aplicaciones         AplicacionCorridaPool[]
+  createdAt            DateTime                @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([poolId, periodo, createdAt])
+  @@map("corridas_asignacion_pool")
+}
+
+model AplicacionCorridaPool {
+  id           String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  corridaId    String                @db.Uuid
+  corrida      CorridaAsignacionPool @relation(fields: [corridaId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  ordenId      String                @db.Uuid
+  orden        OrdenTrabajo          @relation(fields: [ordenId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  userId       String                @db.Uuid
+  cantidadBase Decimal               @db.Decimal(18, 4)
+  importe      Decimal               @db.Decimal(18, 4)
+
+  @@index([userId])
+  @@index([corridaId])
+  @@index([ordenId])
+  @@map("aplicaciones_corrida_pool")
 }
 
 /// Modelo reutilizable. `companyId = null` identifica una plantilla declarada
@@ -468,28 +577,28 @@ enum ElementoPresupuesto {
 }
 
 model VersionPresupuesto {
-  id             String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  companyId      String                   @db.Uuid
-  company        Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  ordenId        String                   @db.Uuid
-  orden          OrdenTrabajo             @relation(fields: [ordenId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  userId         String                   @db.Uuid
-  tipo           TipoVersionPresupuesto
-  numero         Int
-  vigenteDesde   DateTime                 @db.Date
-  vigenciaDias   Int
-  estado         EstadoVersionPresupuesto @default(BORRADOR)
-  costoPrevisto  Decimal                  @db.Decimal(18, 4)
-  precio         Decimal                  @db.Decimal(18, 4)
-  plazoDias      Int
-  preparadoPor   String?                  @db.Uuid
-  aprobadoPor    String?                  @db.Uuid
-  causaAdicional String?                  @db.VarChar(500)
-  renglones      RenglonPresupuesto[]
+  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId        String                   @db.Uuid
+  company          Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ordenId          String                   @db.Uuid
+  orden            OrdenTrabajo             @relation(fields: [ordenId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId           String                   @db.Uuid
+  tipo             TipoVersionPresupuesto
+  numero           Int
+  vigenteDesde     DateTime                 @db.Date
+  vigenciaDias     Int
+  estado           EstadoVersionPresupuesto @default(BORRADOR)
+  costoPrevisto    Decimal                  @db.Decimal(18, 4)
+  precio           Decimal                  @db.Decimal(18, 4)
+  plazoDias        Int
+  preparadoPor     String?                  @db.Uuid
+  aprobadoPor      String?                  @db.Uuid
+  causaAdicional   String?                  @db.VarChar(500)
+  renglones        RenglonPresupuesto[]
   partesHorasExtra ParteHoras[]
-  contingencias EventoContingencia[]
-  createdAt      DateTime                 @default(now()) @db.Timestamptz
-  updatedAt      DateTime                 @updatedAt @db.Timestamptz
+  contingencias    EventoContingencia[]
+  createdAt        DateTime                 @default(now()) @db.Timestamptz
+  updatedAt        DateTime                 @updatedAt @db.Timestamptz
 
   @@unique([ordenId, numero])
   @@index([userId])
@@ -499,19 +608,19 @@ model VersionPresupuesto {
 
 /// Snapshot versionado de los insumos con los que el motor obtiene la tarifa integral.
 model TarifaManoObra {
-  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  companyId         String   @db.Uuid
-  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  userId            String   @db.Uuid
-  nombre            String   @db.VarChar(160)
-  basicRemuneration Decimal  @db.Decimal(18, 4)
-  hoursWorked       Decimal  @db.Decimal(18, 4)
-  productiveHours   Decimal? @db.Decimal(18, 4)
-  standardHours     Decimal? @db.Decimal(18, 4)
-  itcsPct           Decimal  @db.Decimal(9, 4)
-  primaExtraPct     Decimal  @default(50) @db.Decimal(9, 4)
-  vigenteDesde      DateTime @db.Date
-  createdAt         DateTime @default(now()) @db.Timestamptz
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId         String       @db.Uuid
+  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId            String       @db.Uuid
+  nombre            String       @db.VarChar(160)
+  basicRemuneration Decimal      @db.Decimal(18, 4)
+  hoursWorked       Decimal      @db.Decimal(18, 4)
+  productiveHours   Decimal?     @db.Decimal(18, 4)
+  standardHours     Decimal?     @db.Decimal(18, 4)
+  itcsPct           Decimal      @db.Decimal(9, 4)
+  primaExtraPct     Decimal      @default(50) @db.Decimal(9, 4)
+  vigenteDesde      DateTime     @db.Date
+  createdAt         DateTime     @default(now()) @db.Timestamptz
   partesHoras       ParteHoras[]
 
   @@index([userId])
@@ -528,8 +637,8 @@ model ParteHoras {
   userId                 String              @db.Uuid
   personaId              String              @db.Uuid
   fecha                  DateTime            @db.Date
-  horasNormales         Decimal             @db.Decimal(10, 4)
-  horasExtra            Decimal             @db.Decimal(10, 4)
+  horasNormales          Decimal             @db.Decimal(10, 4)
+  horasExtra             Decimal             @db.Decimal(10, 4)
   tarifaId               String              @db.Uuid
   tarifa                 TarifaManoObra      @relation(fields: [tarifaId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   tarifaHora             Decimal             @db.Decimal(18, 4)
@@ -550,41 +659,43 @@ model ParteHoras {
 }
 
 model CostoDirectoOrden {
-  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ordenId String @db.Uuid
-  orden OrdenTrabajo @relation(fields: [ordenId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  etapaId String @db.Uuid
-  etapa EtapaOrden @relation(fields: [etapaId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  userId String @db.Uuid
-  categoria CategoriaCostoDirectoOrden
-  importe Decimal @db.Decimal(18, 4)
-  documento String? @db.VarChar(500)
-  periodoImputado DateTime @db.Date
-  estadoValidacion EstadoValidacionOrden @default(PENDIENTE)
-  createdAt DateTime @default(now()) @db.Timestamptz
+  id               String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ordenId          String                     @db.Uuid
+  orden            OrdenTrabajo               @relation(fields: [ordenId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  etapaId          String                     @db.Uuid
+  etapa            EtapaOrden                 @relation(fields: [etapaId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  userId           String                     @db.Uuid
+  categoria        CategoriaCostoDirectoOrden
+  importe          Decimal                    @db.Decimal(18, 4)
+  documento        String?                    @db.VarChar(500)
+  periodoImputado  DateTime                   @db.Date
+  estadoValidacion EstadoValidacionOrden      @default(PENDIENTE)
+  createdAt        DateTime                   @default(now()) @db.Timestamptz
+
   @@index([userId])
   @@index([ordenId, periodoImputado])
   @@map("costos_directos_orden")
 }
 
 model EventoContingencia {
-  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ordenId String @db.Uuid
-  orden OrdenTrabajo @relation(fields: [ordenId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  etapaId String @db.Uuid
-  etapa EtapaOrden @relation(fields: [etapaId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  userId String @db.Uuid
-  tipo TipoEventoContingencia
-  cantidad Decimal @db.Decimal(18, 4)
-  valor Decimal @db.Decimal(18, 4)
-  recupero Decimal? @db.Decimal(18, 4)
-  causa String @db.VarChar(500)
-  tratamiento String @db.VarChar(500)
-  politicaRetrabajo PoliticaRetrabajo?
-  versionPresupuestoId String? @db.Uuid
-  versionPresupuesto VersionPresupuesto? @relation(fields: [versionPresupuestoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  estadoValidacion EstadoValidacionOrden @default(PENDIENTE)
-  createdAt DateTime @default(now()) @db.Timestamptz
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ordenId              String                 @db.Uuid
+  orden                OrdenTrabajo           @relation(fields: [ordenId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  etapaId              String                 @db.Uuid
+  etapa                EtapaOrden             @relation(fields: [etapaId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  userId               String                 @db.Uuid
+  tipo                 TipoEventoContingencia
+  cantidad             Decimal                @db.Decimal(18, 4)
+  valor                Decimal                @db.Decimal(18, 4)
+  recupero             Decimal?               @db.Decimal(18, 4)
+  causa                String                 @db.VarChar(500)
+  tratamiento          String                 @db.VarChar(500)
+  politicaRetrabajo    PoliticaRetrabajo?
+  versionPresupuestoId String?                @db.Uuid
+  versionPresupuesto   VersionPresupuesto?    @relation(fields: [versionPresupuestoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  estadoValidacion     EstadoValidacionOrden  @default(PENDIENTE)
+  createdAt            DateTime               @default(now()) @db.Timestamptz
+
   @@index([userId])
   @@index([ordenId, createdAt])
   @@map("eventos_contingencia")
@@ -1117,6 +1228,7 @@ model CostStructure {
    * /**
    * /**
    * /**
+   * /**
    * Override del ritmo de la empresa. Null = hereda de `Company.periodicity`.
    */
   periodicity      Periodicity?
@@ -1145,6 +1257,7 @@ model CostStructure {
   // mapa productivo. Con eso la IA deja de adivinar y solo tiene que adjudicar.
   // ---------------------------------------------------------------------------
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -2079,6 +2192,7 @@ model CalculationRun {
    * /**
    * /**
    * /**
+   * /**
    * Período al que pertenece. Nullable: las corridas anteriores al modelo de
    * períodos no tienen a cuál apuntar, y mentirles un período sería peor que
    * dejarlas sin él.
@@ -2487,6 +2601,7 @@ model UnitMovementSchedule {
    * /**
    * /**
    * /**
+   * /**
    * /** Existencia inicial de producción en proceso (EI), en unidades.
    */
   initialWip           Decimal  @default(0) @db.Decimal(18, 4)
@@ -2513,6 +2628,7 @@ model UnitMovementSchedule {
 
   // --- SALIDAS (unidades) ---
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -2565,6 +2681,7 @@ model UnitMovementSchedule {
    * /**
    * /**
    * /**
+   * /**
    * /** Costo de Materia Prima incurrido en el período.
    */
   periodCostMp           Decimal? @db.Decimal(18, 4)
@@ -2600,6 +2717,7 @@ model UnitMovementSchedule {
 
   // --- PROCEDENCIA DEL RECUENTO ---
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -3310,18 +3428,18 @@ enum TipoMovimientoInventario {
 }
 
 model Articulo {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  companyId   String   @db.Uuid
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  userId      String   @db.Uuid
-  codigo      String   @db.VarChar(80)
-  descripcion String   @db.VarChar(300)
-  unidadId    String   @db.Uuid
-  unidad      UnidadMedida @relation(fields: [unidadId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  almacenable Boolean  @default(true)
+  id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId   String                 @db.Uuid
+  company     Company                @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId      String                 @db.Uuid
+  codigo      String                 @db.VarChar(80)
+  descripcion String                 @db.VarChar(300)
+  unidadId    String                 @db.Uuid
+  unidad      UnidadMedida           @relation(fields: [unidadId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  almacenable Boolean                @default(true)
   movimientos MovimientoInventario[]
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  updatedAt   DateTime @updatedAt @db.Timestamptz
+  createdAt   DateTime               @default(now()) @db.Timestamptz
+  updatedAt   DateTime               @updatedAt @db.Timestamptz
 
   @@unique([companyId, codigo])
   @@index([userId])
@@ -3329,35 +3447,35 @@ model Articulo {
 }
 
 model MovimientoInventario {
-  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  companyId          String   @db.Uuid
-  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  userId             String   @db.Uuid
-  articuloId         String   @db.Uuid
-  articulo           Articulo @relation(fields: [articuloId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  depositoId         String?  @db.Uuid
-  deposito           Deposito? @relation(fields: [depositoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  id                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId          String                   @db.Uuid
+  company            Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId             String                   @db.Uuid
+  articuloId         String                   @db.Uuid
+  articulo           Articulo                 @relation(fields: [articuloId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  depositoId         String?                  @db.Uuid
+  deposito           Deposito?                @relation(fields: [depositoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   tipo               TipoMovimientoInventario
-  cantidad           Decimal  @db.Decimal(18, 4)
-  costoUnitario      Decimal  @db.Decimal(18, 4)
-  fecha              DateTime @db.Date
-  ordenId            String?  @db.Uuid
-  orden              OrdenTrabajo? @relation("OrdenMovimientoInventario", fields: [ordenId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  ordenDestinoId     String?  @db.Uuid
-  ordenDestino       OrdenTrabajo? @relation("OrdenDestinoMovimientoInventario", fields: [ordenDestinoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  movimientoOrigenId String?  @db.Uuid
-  movimientoOrigen   MovimientoInventario? @relation("MovimientoInventarioOrigen", fields: [movimientoOrigenId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  derivados          MovimientoInventario[] @relation("MovimientoInventarioOrigen")
-  documento          String?  @db.VarChar(300)
-  identidadExterna   String?  @db.VarChar(200)
-  documentoHash      String?  @db.VarChar(64)
-  periodoImputado    DateTime @db.Date
-  createdAt          DateTime @default(now()) @db.Timestamptz
+  cantidad           Decimal                  @db.Decimal(18, 4)
+  costoUnitario      Decimal                  @db.Decimal(18, 4)
+  fecha              DateTime                 @db.Date
+  ordenId            String?                  @db.Uuid
+  orden              OrdenTrabajo?            @relation("OrdenMovimientoInventario", fields: [ordenId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  ordenDestinoId     String?                  @db.Uuid
+  ordenDestino       OrdenTrabajo?            @relation("OrdenDestinoMovimientoInventario", fields: [ordenDestinoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  movimientoOrigenId String?                  @db.Uuid
+  movimientoOrigen   MovimientoInventario?    @relation("MovimientoInventarioOrigen", fields: [movimientoOrigenId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  derivados          MovimientoInventario[]   @relation("MovimientoInventarioOrigen")
+  documento          String?                  @db.VarChar(300)
+  identidadExterna   String?                  @db.VarChar(200)
+  documentoHash      String?                  @db.VarChar(64)
+  periodoImputado    DateTime                 @db.Date
+  createdAt          DateTime                 @default(now()) @db.Timestamptz
 
+  @@unique([companyId, identidadExterna, documentoHash])
   @@index([companyId, articuloId, fecha, createdAt])
   @@index([userId])
   @@index([ordenId])
-  @@unique([companyId, identidadExterna, documentoHash])
   @@map("movimientos_inventario")
 }
 
@@ -3380,9 +3498,9 @@ model Deposito {
   movimientos           MovimientoDeposito[]
   movimientosInventario MovimientoInventario[]
   operadoresAutorizados OperatorDeposito[]
-  createdAt             DateTime             @default(now()) @db.Timestamptz
-  updatedAt             DateTime             @updatedAt @db.Timestamptz
-  deletedAt             DateTime?            @db.Timestamptz
+  createdAt             DateTime               @default(now()) @db.Timestamptz
+  updatedAt             DateTime               @updatedAt @db.Timestamptz
+  deletedAt             DateTime?              @db.Timestamptz
 
   @@unique([companyId, referencia])
   @@index([companyId])
