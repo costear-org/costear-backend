@@ -379,6 +379,7 @@ model OrdenTrabajo {
   costosDirectos         CostoDirectoOrden[]
   contingencias          EventoContingencia[]
   aplicacionesIndirectos AplicacionCorridaPool[]
+  fotosCierre            FotoCierreOrden[]       @relation("OrdenFotosCierre")
   estado                 EstadoOrdenTrabajo      @default(BORRADOR)
   fechaInicio            DateTime?               @db.Date
   fechaFinTecnica        DateTime?               @db.Timestamptz
@@ -390,6 +391,27 @@ model OrdenTrabajo {
   @@index([userId])
   @@index([companyId, estado])
   @@map("ordenes_trabajo")
+}
+
+model FotoCierreOrden {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ordenId          String             @db.Uuid
+  orden            OrdenTrabajo       @relation("OrdenFotosCierre", fields: [ordenId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  userId           String             @db.Uuid
+  version          Int
+  congelado        Json
+  versionMotor     String             @db.VarChar(40)
+  cerradoPor       String             @db.Uuid
+  motivoReapertura String?            @db.VarChar(500)
+  anteriorId       String?            @unique @db.Uuid
+  anterior         FotoCierreOrden?   @relation("HistorialCierreOrden", fields: [anteriorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  siguiente        FotoCierreOrden?   @relation("HistorialCierreOrden")
+  createdAt        DateTime           @default(now()) @db.Timestamptz
+
+  @@unique([ordenId, version])
+  @@index([userId])
+  @@index([ordenId, createdAt])
+  @@map("fotos_cierre_orden")
 }
 
 enum TipoPoolIndirecto {

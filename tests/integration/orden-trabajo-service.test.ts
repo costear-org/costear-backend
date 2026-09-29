@@ -3,6 +3,7 @@ import { OrdenTrabajoService } from '@/application/ordenes/orden-trabajo-service
 import { ParteHorasService } from '@/application/ordenes/parte-horas-service.js';
 import { CostosDirectosService } from '@/application/ordenes/costos-directos-service.js';
 import { InformeDesvioOrdenService } from '@/application/ordenes/informe-desvio-orden-service.js';
+import { CierreOrdenService } from '@/application/ordenes/cierre-orden-service.js';
 import { prisma, withTenant } from '@/infrastructure/database/prisma.js';
 import { randomUUID } from 'node:crypto';
 import { createTenant, disconnect, type Tenant } from './helpers/tenants.js';
@@ -15,6 +16,30 @@ beforeAll(async () => { A = await createTenant('orden-a'); B = await createTenan
 afterAll(disconnect);
 
 describe('FX-OT — orden de trabajo con RLS real', () => {
+  it('test 22 — conserva la foto anterior al reabrir y sumar una factura tardía', async () => {
+    const orders = new OrdenTrabajoService();
+    const closures = new CierreOrdenService();
+    await withTenant(A.userId, (tx) => tx.company.update({ where: { id: A.companyId }, data: { industry: 'CONSTRUCCION_MODULAR' } }));
+    const order = await orders.create(A.userId, A.companyId, {
+      codigo: `OT-CIERRE-${randomUUID().slice(0, 8)}`, descripcion: 'Obra X', cliente: 'Cliente ficticio', plantillaId: null, fechaInicio: '2026-08-01',
+    }, actor(A.userId));
+    await withTenant(A.userId, (tx) => tx.ordenTrabajo.update({ where: { id: order.id }, data: { estado: 'PENDIENTE_CIERRE' } }));
+    const first = await closures.close(A.userId, order.id, actor(A.userId));
+    await closures.reopen(A.userId, order.id, { motivo: 'Llegó una factura de transporte de septiembre' }, actor(A.userId));
+    const afterReopen = await closures.list(A.userId, order.id);
+    expect(afterReopen).toHaveLength(2);
+    expect(afterReopen[1]).toMatchObject({ version: 2, anteriorId: first.id, motivoReapertura: 'Llegó una factura de transporte de septiembre' });
+    const stage = (await orders.listStages(A.userId, order.id))[0]!;
+    const lateInvoice = await withTenant(A.userId, (tx) => tx.costoDirectoOrden.create({ data: {
+      ordenId: order.id, etapaId: stage.id, userId: A.userId, categoria: 'TRANSPORTE', importe: 180000,
+      periodoImputado: new Date('2026-09-01T00:00:00Z'), estadoValidacion: 'VALIDADO',
+    } }));
+    const final = await closures.close(A.userId, order.id, actor(A.userId));
+    const photos = await closures.list(A.userId, order.id);
+    expect(lateInvoice.periodoImputado.toISOString()).toContain('2026-09-01');
+    expect(photos.map((x) => x.id)).toEqual([first.id, afterReopen[1]!.id, final.id]);
+    expect(final).toMatchObject({ version: 3, anteriorId: afterReopen[1]!.id });
+  });
   it('aísla el informe por RLS y no inventa importes cuando todavía no hay hechos', async () => {
     const orders = new OrdenTrabajoService();
     const reports = new InformeDesvioOrdenService();

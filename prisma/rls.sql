@@ -746,6 +746,12 @@ CREATE POLICY tenant_select ON partes_horas FOR SELECT USING (
 CREATE POLICY tenant_write ON partes_horas FOR ALL
   USING ("userId" = current_app_user_id()) WITH CHECK ("userId" = current_app_user_id());
 
+ALTER TABLE fotos_cierre_orden ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fotos_cierre_orden FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON fotos_cierre_orden;
+CREATE POLICY tenant_isolation ON fotos_cierre_orden
+  USING ("userId" = current_app_user_id()) WITH CHECK ("userId" = current_app_user_id());
+
 -- activos_amortizables y desperdicio_registros (S-03 y S-04): `userId`
 -- denormalizado, mismo patrón que cost_periods.
 ALTER TABLE activos_amortizables ENABLE ROW LEVEL SECURITY;

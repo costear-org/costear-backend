@@ -14,6 +14,8 @@ import { CostosDirectosService } from '../../../application/ordenes/costos-direc
 import { contingenciaCreateSchema, contingenciaEnvelopeSchema, contingenciasEnvelopeSchema, costoDirectoCreateSchema, costoDirectoEnvelopeSchema, costosDirectosEnvelopeSchema } from '../../../shared/schemas/costos-directos.schema.js';
 import { InformeDesvioOrdenService } from '../../../application/ordenes/informe-desvio-orden-service.js';
 import { informeDesvioOrdenEnvelopeSchema } from '../../../shared/schemas/informe-desvio-orden.schema.js';
+import { CierreOrdenService } from '../../../application/ordenes/cierre-orden-service.js';
+import { fotoCierreOrdenEnvelopeSchema, fotosCierreOrdenEnvelopeSchema, reaperturaOrdenSchema } from '../../../shared/schemas/cierre-orden.schema.js';
 
 const companyParams = z.object({ companyId: z.string().uuid() });
 const idParams = z.object({ id: z.string().uuid() });
@@ -39,6 +41,7 @@ export async function registerOrdenTrabajoRoutes(app: FastifyInstance): Promise<
   const partesHoras = new ParteHorasService();
   const costosDirectos = new CostosDirectosService();
   const informesDesvio = new InformeDesvioOrdenService();
+  const cierres = new CierreOrdenService();
   const scopes = new OperatorScopeService();
   contract.post('/companies/:companyId/ordenes-trabajo', {
     preHandler: authenticate, schema: { body: ordenTrabajoCreateSchema, response: { 201: ordenTrabajoEnvelopeSchema, ...apiErrorResponses } },
@@ -92,6 +95,27 @@ export async function registerOrdenTrabajoRoutes(app: FastifyInstance): Promise<
     const permission: PermisoOperador = input.estado === 'PENDIENTE_CIERRE' || input.estado === 'CERRADA' ? 'ordenes.cerrar' : 'ordenes.editar';
     const tenantId = esOperador(request) ? await scopes.tenantForOrden(request.authUser!.id, id, permission) : request.authUser!.id;
     return { data: await service.transition(tenantId, id, input, actorFrom(request)) };
+  });
+  contract.post('/ordenes-trabajo/:id/cierre', {
+    preHandler: authenticate, schema: { body: z.object({}).optional(), response: { 201: fotoCierreOrdenEnvelopeSchema, ...apiErrorResponses } },
+  }, async (request, reply) => {
+    const { id } = idParams.parse(request.params);
+    const tenantId = esOperador(request) ? await scopes.tenantForOrden(request.authUser!.id, id, 'ordenes.cerrar') : request.authUser!.id;
+    return reply.code(201).send({ data: await cierres.close(tenantId, id, actorFrom(request)) });
+  });
+  contract.post('/ordenes-trabajo/:id/reapertura', {
+    preHandler: authenticate, schema: { body: reaperturaOrdenSchema, response: { 200: ordenTrabajoEnvelopeSchema, ...apiErrorResponses } },
+  }, async (request) => {
+    const { id } = idParams.parse(request.params);
+    const tenantId = esOperador(request) ? await scopes.tenantForOrden(request.authUser!.id, id, 'ordenes.cerrar') : request.authUser!.id;
+    return { data: await cierres.reopen(tenantId, id, reaperturaOrdenSchema.parse(request.body), actorFrom(request)) };
+  });
+  contract.get('/ordenes-trabajo/:id/fotos-cierre', {
+    preHandler: authenticate, schema: { response: { 200: fotosCierreOrdenEnvelopeSchema, ...apiErrorResponses } },
+  }, async (request) => {
+    const { id } = idParams.parse(request.params);
+    const tenantId = esOperador(request) ? await scopes.tenantForOrden(request.authUser!.id, id, 'ordenes.ver') : request.authUser!.id;
+    return { data: await cierres.list(tenantId, id) };
   });
   contract.post('/ordenes-trabajo/:id/presupuestos', {
     preHandler: authenticate, schema: { body: presupuestoCreateSchema, response: { 201: presupuestoEnvelopeSchema, ...apiErrorResponses } },

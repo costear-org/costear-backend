@@ -104,6 +104,7 @@ export const RLS_MODELS = new Set([
   'RenglonPresupuesto',
   'TarifaManoObra',
   'ParteHoras',
+  'FotoCierreOrden',
   'CostoDirectoOrden',
   'EventoContingencia',
   'PoolIndirecto',

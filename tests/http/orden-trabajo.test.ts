@@ -15,6 +15,7 @@ const { db, auth } = vi.hoisted(() => ({ auth: { role: 'EMPRESA_ADMIN' }, db: {
   parteHoras: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   costoDirectoOrden: { findMany: vi.fn(), create: vi.fn() },
   eventoContingencia: { findMany: vi.fn(), create: vi.fn() },
+  fotoCierreOrden: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
   traceAuditLog: { create: vi.fn() },
   operatorMembership: { findFirst: vi.fn() },
   operatorOrdenTrabajo: { findFirst: vi.fn(), findMany: vi.fn() },
@@ -124,6 +125,21 @@ describe('rutas de órdenes de trabajo', () => {
     });
     expect(res.statusCode).toBe(403);
     expect(db.ordenTrabajo.update).not.toHaveBeenCalled();
+  });
+
+  it('un operador sin ordenes.cerrar recibe 403 al cerrar', async () => {
+    auth.role = 'EMPRESA_OPERATOR';
+    db.operatorOrdenTrabajo.findFirst.mockResolvedValue(null);
+    const api = await app();
+    const res = await api.inject({ method: 'POST', url: `/ordenes-trabajo/${ORDER}/cierre`, payload: {} });
+    expect(res.statusCode).toBe(403);
+    expect(db.fotoCierreOrden.create).not.toHaveBeenCalled();
+  });
+
+  it('reabrir sin motivo devuelve 400, no 500', async () => {
+    const api = await app();
+    const res = await api.inject({ method: 'POST', url: `/ordenes-trabajo/${ORDER}/reapertura`, payload: { motivo: '' } });
+    expect(res.statusCode).toBe(400);
   });
 
   it('un usuario de planta pide el informe y recibe 403', async () => {
