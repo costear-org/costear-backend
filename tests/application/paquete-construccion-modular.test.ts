@@ -2,9 +2,49 @@ import { describe, expect, it } from 'vitest';
 import {
   CATEGORIA_CONSTRUCCION_MODULAR,
   PAQUETE_CONSTRUCCION_MODULAR,
+  evaluarAlertaConstruccionModular,
 } from '@/application/operacion/paquete-construccion-modular.js';
 
 describe('paquete de construcción modular', () => {
+  it('camino de falla: un umbral sin declarar produce NO_EVALUABLE, no normal', () => {
+    const resultado = evaluarAlertaConstruccionModular(
+      'margen_en_deterioro',
+      { valor: 18, referencia: 25 },
+      {},
+    );
+
+    expect(resultado).toEqual({
+      estado: 'NO_EVALUABLE',
+      motivo: 'Falta configurar el parámetro umbral_desvio_margen_pp.',
+    });
+  });
+
+  it('FX-OT: oferta vencida y costo sin obra disparan las alertas del paquete', () => {
+    const parametros = { vigencia_oferta_dias: 7, max_costos_sin_orden: 0 };
+
+    expect(evaluarAlertaConstruccionModular(
+      'oferta_vencida',
+      { valor: 8 },
+      parametros,
+    )).toMatchObject({ estado: 'ALERTA', hallazgo: { indicador: 'oferta_vencida' } });
+    expect(evaluarAlertaConstruccionModular(
+      'costo_sin_orden',
+      { valor: 1 },
+      parametros,
+    )).toMatchObject({ estado: 'ALERTA', hallazgo: { indicador: 'costo_sin_orden' } });
+  });
+
+  it('declara las nueve alertas configurables del rubro con etiqueta y severidad', () => {
+    expect(PAQUETE_CONSTRUCCION_MODULAR.alertRules.map((regla) => regla.indicador)).toEqual([
+      'oferta_vencida', 'salida_sin_stock', 'costo_sin_orden', 'cambio_sin_aprobar',
+      'horas_atrasadas', 'posible_duplicado', 'base_faltante', 'margen_en_deterioro',
+      'orden_sin_cerrar',
+    ]);
+    expect(PAQUETE_CONSTRUCCION_MODULAR.alertRules.every(
+      (regla) => regla.etiqueta.length > 0 && regla.severidad.length > 0,
+    )).toBe(true);
+  });
+
   it('declara los permisos mínimos de órdenes, inventario y horas', () => {
     expect(PAQUETE_CONSTRUCCION_MODULAR.access.permissions).toEqual([
       'ordenes.ver', 'ordenes.editar', 'ordenes.ver_margen', 'ordenes.aprobar_presupuesto',
