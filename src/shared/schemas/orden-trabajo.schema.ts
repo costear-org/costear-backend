@@ -34,6 +34,20 @@ export const ordenTrabajoSchema = z.object({
 export const ordenTrabajoEnvelopeSchema = z.object({ data: ordenTrabajoSchema });
 export const ordenesTrabajoEnvelopeSchema = z.object({ data: z.array(ordenTrabajoSchema) });
 
+export const carteraOrdenSchema = z.object({
+  codigo: z.string(),
+  descripcion: z.string(),
+  cliente: z.string(),
+  estado: estadoOrdenTrabajoSchema,
+  etiquetaEstado: z.string(),
+  avancePct: z.number().min(0).max(100),
+  margenPresupuestadoPct: z.number().optional(),
+  margenProyectadoPct: z.number().optional(),
+  desvioPp: z.number().optional(),
+  alertasActivas: z.number().int().nonnegative(),
+});
+export const carteraOrdenesEnvelopeSchema = z.object({ data: z.array(carteraOrdenSchema) });
+
 export const etapaOrdenSchema = z.object({
   id: z.string().uuid(), clave: z.string(), nombre: z.string(), orden: z.number().int(), esEntrega: z.boolean(),
 }).passthrough();

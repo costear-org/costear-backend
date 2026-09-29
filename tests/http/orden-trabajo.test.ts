@@ -19,6 +19,7 @@ const { db, auth } = vi.hoisted(() => ({ auth: { role: 'EMPRESA_ADMIN' }, db: {
   traceAuditLog: { create: vi.fn() },
   operatorMembership: { findFirst: vi.fn() },
   operatorOrdenTrabajo: { findFirst: vi.fn(), findMany: vi.fn() },
+  alert: { count: vi.fn() },
 } }));
 vi.mock('@/infrastructure/database/prisma.js', () => ({
   prisma: db, withTenant: async (_id: string, fn: (tx: typeof db) => unknown) => fn(db),
@@ -47,16 +48,48 @@ beforeEach(() => {
   auth.role = 'EMPRESA_ADMIN';
   db.company.findFirst.mockResolvedValue({ id: COMPANY, userId: USER });
   db.ordenTrabajo.findFirst.mockResolvedValue(null);
+  db.ordenTrabajo.findMany.mockResolvedValue([]);
   db.ordenTrabajo.create.mockResolvedValue({ id: ORDER, companyId: COMPANY, codigo: 'OT-001', descripcion: 'Obra X', cliente: 'Cliente ficticio', estado: 'BORRADOR' });
   db.plantillaOrden.findMany.mockResolvedValue([]);
   db.etapaOrden.findMany.mockResolvedValue([]);
   db.operatorMembership.findFirst.mockResolvedValue(null);
   db.operatorOrdenTrabajo.findMany.mockResolvedValue([]);
+  db.alert.count.mockResolvedValue(0);
   db.versionPresupuesto.findFirst.mockResolvedValue(null);
   db.versionPresupuesto.findMany.mockResolvedValue([]);
 });
 
 describe('rutas de órdenes de trabajo', () => {
+  it('devuelve lista vacía y 200 cuando la empresa no tiene órdenes', async () => {
+    const api = await app();
+    const res = await api.inject({ method: 'GET', url: `/companies/${COMPANY}/cartera-ordenes` });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ data: [] });
+  });
+
+  it('un operador sin permiso de margen recibe la cartera sin campos de margen', async () => {
+    auth.role = 'EMPRESA_OPERATOR';
+    db.operatorMembership.findFirst
+      .mockResolvedValueOnce({ connection: { costistId: USER } })
+      .mockResolvedValueOnce(null);
+    db.operatorOrdenTrabajo.findMany.mockResolvedValue([{ ordenId: ORDER }]);
+    db.ordenTrabajo.findMany.mockResolvedValue([{
+      id: ORDER, codigo: 'OT-001', descripcion: 'Obra X', cliente: 'Cliente ficticio', estado: 'EN_PRODUCCION',
+    }]);
+    db.ordenTrabajo.findFirst.mockResolvedValue({
+      id: ORDER, estado: 'EN_PRODUCCION',
+      presupuestos: [{ tipo: 'BASE', estado: 'APROBADO', costoPrevisto: 60, precio: 100, renglones: [] }],
+      movimientosInventario: [], movimientosDestino: [], partesHoras: [], costosDirectos: [], aplicacionesIndirectos: [],
+    });
+    const api = await app();
+    const res = await api.inject({ method: 'GET', url: `/companies/${COMPANY}/cartera-ordenes` });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().data).toEqual([expect.objectContaining({ codigo: 'OT-001', avancePct: 0, alertasActivas: 0 })]);
+    expect(res.json().data[0]).not.toHaveProperty('margenPresupuestadoPct');
+    expect(res.json().data[0]).not.toHaveProperty('margenProyectadoPct');
+    expect(res.json().data[0]).not.toHaveProperty('desvioPp');
+  });
+
   it('crea con 201 y etiqueta visible', async () => {
     const api = await app();
     const res = await api.inject({ method: 'POST', url: `/companies/${COMPANY}/ordenes-trabajo`, payload: {

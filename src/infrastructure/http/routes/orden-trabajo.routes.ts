@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
 import { OrdenTrabajoService } from '../../../application/ordenes/orden-trabajo-service.js';
-import { etapasOrdenEnvelopeSchema, ordenTrabajoCreateSchema, ordenTrabajoEnvelopeSchema, ordenesTrabajoEnvelopeSchema, ordenTrabajoTransitionSchema, plantillasOrdenEnvelopeSchema } from '../../../shared/schemas/orden-trabajo.schema.js';
+import { carteraOrdenesEnvelopeSchema, etapasOrdenEnvelopeSchema, ordenTrabajoCreateSchema, ordenTrabajoEnvelopeSchema, ordenesTrabajoEnvelopeSchema, ordenTrabajoTransitionSchema, plantillasOrdenEnvelopeSchema } from '../../../shared/schemas/orden-trabajo.schema.js';
 import { apiErrorResponses } from '../../../shared/schemas/api-contract.schema.js';
 import { authenticate } from '../plugins/authenticate.js';
 import { OperatorScopeService, type PermisoOperador } from '../../../application/empresa/operator-scope-service.js';
@@ -16,6 +16,7 @@ import { InformeDesvioOrdenService } from '../../../application/ordenes/informe-
 import { informeDesvioOrdenEnvelopeSchema } from '../../../shared/schemas/informe-desvio-orden.schema.js';
 import { CierreOrdenService } from '../../../application/ordenes/cierre-orden-service.js';
 import { fotoCierreOrdenEnvelopeSchema, fotosCierreOrdenEnvelopeSchema, reaperturaOrdenSchema } from '../../../shared/schemas/cierre-orden.schema.js';
+import { CarteraOrdenesService } from '../../../application/ordenes/cartera-ordenes-service.js';
 
 const companyParams = z.object({ companyId: z.string().uuid() });
 const idParams = z.object({ id: z.string().uuid() });
@@ -31,6 +32,10 @@ const sinTarifa = <T extends { tarifaHora?: unknown; primaExtraHora?: unknown; i
   const { tarifaHora: _tarifa, primaExtraHora: _prima, importeMod: _importe, ...visible } = value;
   return visible;
 };
+const sinMargenesCartera = <T extends { margenPresupuestadoPct?: unknown; margenProyectadoPct?: unknown; desvioPp?: unknown }>(value: T) => {
+  const { margenPresupuestadoPct: _presupuestado, margenProyectadoPct: _proyectado, desvioPp: _desvio, ...visible } = value;
+  return visible;
+};
 
 export async function registerOrdenTrabajoRoutes(app: FastifyInstance): Promise<void> {
   app.setSerializerCompiler(serializerCompiler);
@@ -42,6 +47,7 @@ export async function registerOrdenTrabajoRoutes(app: FastifyInstance): Promise<
   const costosDirectos = new CostosDirectosService();
   const informesDesvio = new InformeDesvioOrdenService();
   const cierres = new CierreOrdenService();
+  const cartera = new CarteraOrdenesService();
   const scopes = new OperatorScopeService();
   contract.post('/companies/:companyId/ordenes-trabajo', {
     preHandler: authenticate, schema: { body: ordenTrabajoCreateSchema, response: { 201: ordenTrabajoEnvelopeSchema, ...apiErrorResponses } },
@@ -59,6 +65,15 @@ export async function registerOrdenTrabajoRoutes(app: FastifyInstance): Promise<
     const canSeeMargin = await scopes.assertPermission(request.authUser!.id, 'ordenes.ver_margen').then(() => true, () => false);
     const data = await service.list(tenantId, companyId, ordenIds);
     return { data: canSeeMargin ? data : data.map(sinMargen) };
+  });
+  contract.get('/companies/:companyId/cartera-ordenes', { preHandler: authenticate, schema: { response: { 200: carteraOrdenesEnvelopeSchema, ...apiErrorResponses } } }, async (request) => {
+    const { companyId } = companyParams.parse(request.params);
+    if (!esOperador(request)) return { data: await cartera.list(request.authUser!.id, companyId) };
+    const tenantId = await scopes.tenantForCompany(request.authUser!.id, companyId, 'ordenes.ver');
+    const ordenIds = await scopes.ordenIds(request.authUser!.id, companyId);
+    const canSeeMargin = await scopes.assertPermission(request.authUser!.id, 'ordenes.ver_margen').then(() => true, () => false);
+    const data = await cartera.list(tenantId, companyId, ordenIds);
+    return { data: canSeeMargin ? data : data.map(sinMargenesCartera) };
   });
   contract.get('/companies/:companyId/plantillas-orden', { preHandler: authenticate, schema: { response: { 200: plantillasOrdenEnvelopeSchema, ...apiErrorResponses } } }, async (request) => {
     const { companyId } = companyParams.parse(request.params);
