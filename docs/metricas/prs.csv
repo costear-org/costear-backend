@@ -193,3 +193,7 @@ pr,issue,autor,base,abierto,mergeado,horas,archivos,agregadas,borradas,corridas_
 497,488,AlanArevalo1,dev,2026-09-27T03:38:42Z,2026-09-27T03:43:36Z,0.1,13,2134,72,9,0,,,docs/sesiones/2026-09-27-488-catalogos-alcance-cargador.md
 499,478,AlanArevalo1,dev,2026-09-27T15:43:03Z,2026-09-27T15:46:35Z,0.1,9,1267,0,9,0,,,docs/sesiones/2026-09-27-478-informe-desvio-orden.md
 500,498,AlanArevalo1,dev,2026-09-27T19:41:12Z,2026-09-27T19:45:14Z,0.1,10,942,0,8,0,,,docs/sesiones/2026-09-27-498-lexico-paquete-empresa.md
+503,479,AlanArevalo1,dev,2026-09-29T02:37:29Z,2026-09-29T02:41:42Z,0.1,13,2643,0,8,0,,,docs/sesiones/2026-09-28-479-cierre-orden.md
+504,480,AlanArevalo1,dev,2026-09-29T03:28:34Z,2026-09-29T03:34:35Z,0.1,3,203,1,11,0,,,docs/sesiones/2026-09-29-480-alertas-construccion-modular.md
+505,481,AlanArevalo1,dev,2026-09-29T04:35:01Z,2026-09-29T04:38:40Z,0.1,8,995,1,8,0,,,docs/sesiones/2026-09-29-481-cartera-ordenes.md
+506,502,AlanArevalo1,dev,2026-09-29T05:34:31Z,2026-09-29T05:40:49Z,0.1,7,207,7,12,0,,,docs/sesiones/2026-09-29-502-articulo-unidad-legible.md
