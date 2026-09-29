@@ -16674,6 +16674,12 @@ export interface paths {
                                 descripcion: string;
                                 /** Format: uuid */
                                 unidadId: string;
+                                unidad: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    nombre: string;
+                                    simbolo: string;
+                                };
                                 almacenable: boolean;
                                 saldoCantidad: number;
                                 saldoValor: number;
@@ -16883,6 +16889,12 @@ export interface paths {
                                 descripcion: string;
                                 /** Format: uuid */
                                 unidadId: string;
+                                unidad: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    nombre: string;
+                                    simbolo: string;
+                                };
                                 almacenable: boolean;
                             } & {
                                 [key: string]: unknown;

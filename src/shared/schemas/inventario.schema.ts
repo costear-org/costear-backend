@@ -26,12 +26,18 @@ export const movimientoInventarioCreateSchema = z.object({
 export type ArticuloCreateInput = z.infer<typeof articuloCreateSchema>;
 export type MovimientoInventarioCreateInput = z.infer<typeof movimientoInventarioCreateSchema>;
 
+const unidadArticuloSchema = z.object({
+  id: z.string().uuid(), nombre: z.string(), simbolo: z.string(),
+});
+
 export const articuloSchema = z.object({
   id: z.string().uuid(), codigo: z.string(), descripcion: z.string(), unidadId: z.string().uuid(),
+  unidad: unidadArticuloSchema,
   almacenable: z.boolean(), saldoCantidad: z.number(), saldoValor: z.number(), ppp: z.number(),
 }).passthrough();
 export const articuloCreadoSchema = z.object({
-  id: z.string().uuid(), codigo: z.string(), descripcion: z.string(), unidadId: z.string().uuid(), almacenable: z.boolean(),
+  id: z.string().uuid(), codigo: z.string(), descripcion: z.string(), unidadId: z.string().uuid(),
+  unidad: unidadArticuloSchema, almacenable: z.boolean(),
 }).passthrough();
 export const articuloEnvelopeSchema = z.object({ data: articuloCreadoSchema });
 export const articulosEnvelopeSchema = z.object({ data: z.array(articuloSchema) });

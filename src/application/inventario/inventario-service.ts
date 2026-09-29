@@ -7,6 +7,7 @@ import type { ArticuloCreateInput, MovimientoInventarioCreateInput } from '../..
 
 class StockInsuficienteError extends UnprocessableEntityError { override readonly code = 'STOCK_INSUFICIENTE'; }
 class CantidadOrigenExcedidaError extends UnprocessableEntityError { override readonly code = 'CANTIDAD_ORIGEN_EXCEDIDA'; }
+class UnidadArticuloNoResueltaError extends UnprocessableEntityError { override readonly code = 'UNIDAD_ARTICULO_NO_RESUELTA'; }
 type Db = PrismaClient;
 type Tx = Prisma.TransactionClient;
 const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
@@ -25,9 +26,12 @@ export class InventarioService {
       const unidad = await tx.unidadMedida.findFirst({ where: { id: input.unidadId, companyId } });
       if (!unidad) throw new NotFoundError('Unidad no encontrada');
       if (await tx.articulo.findFirst({ where: { companyId, codigo: input.codigo } })) throw new ConflictError('Ya existe un artículo con ese código', { field: 'codigo' });
-      const article = await tx.articulo.create({ data: { ...input, companyId, userId } });
+      const article = await tx.articulo.create({
+        data: { ...input, companyId, userId },
+        include: { unidad: { select: { id: true, nombre: true, codigo: true } } },
+      });
       await recordTraceAudit({ entityType: 'Articulo', entityId: article.id, action: 'create', actor, after: article }, tx);
-      return article;
+      return { ...article, unidad: { id: article.unidad.id, nombre: article.unidad.nombre, simbolo: article.unidad.codigo } };
     });
   }
 
@@ -45,8 +49,30 @@ export class InventarioService {
   async listar(userId: string, companyId: string) {
     return this.run(userId, async (tx) => {
       if (!await tx.company.findFirst({ where: { id: companyId, userId } })) throw new NotFoundError('Negocio no encontrado');
-      const articles = await tx.articulo.findMany({ where: { companyId }, orderBy: { codigo: 'asc' }, include: { movimientos: { orderBy: [{ fecha: 'asc' }, { createdAt: 'asc' }] } } });
-      return articles.map(({ movimientos, ...article }) => { const v = this.valuation(movimientos); return { ...article, saldoCantidad: v.qty.toNumber(), saldoValor: v.value.toNumber(), ppp: v.ppp.toNumber() }; });
+      const articles = await tx.articulo.findMany({
+        where: { companyId },
+        orderBy: { codigo: 'asc' },
+        include: {
+          unidad: { select: { id: true, nombre: true, codigo: true } },
+          movimientos: { orderBy: [{ fecha: 'asc' }, { createdAt: 'asc' }] },
+        },
+      });
+      return articles.map(({ movimientos, unidad, ...article }) => {
+        if (!unidad) {
+          throw new UnidadArticuloNoResueltaError('No se pudo resolver la unidad del artículo', {
+            articuloId: article.id,
+            unidadId: article.unidadId,
+          });
+        }
+        const v = this.valuation(movimientos);
+        return {
+          ...article,
+          unidad: { id: unidad.id, nombre: unidad.nombre, simbolo: unidad.codigo },
+          saldoCantidad: v.qty.toNumber(),
+          saldoValor: v.value.toNumber(),
+          ppp: v.ppp.toNumber(),
+        };
+      });
     });
   }
 

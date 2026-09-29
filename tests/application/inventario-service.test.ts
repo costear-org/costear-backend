@@ -24,7 +24,29 @@ function database(articleCompany = COMPANY, politicaPpp: 'MOVIL' | 'PERIODO' = '
   return tx;
 }
 
+function listingDatabase(articles: unknown[]) {
+  const tx = {
+    company: { findFirst: vi.fn().mockResolvedValue({ id: COMPANY }) },
+    articulo: { findMany: vi.fn().mockResolvedValue(articles) },
+    $transaction: vi.fn(async (fn: (client: typeof tx) => unknown) => fn(tx)),
+  };
+  return tx;
+}
+
 describe('InventarioService — caminos de falla antes de persistir', () => {
+  it('falla explícitamente si no puede resolver la unidad de un artículo listado', async () => {
+    const db = listingDatabase([{
+      id: ARTICLE, companyId: COMPANY, codigo: 'CHAPA', descripcion: 'Chapa', unidadId: OUTPUT,
+      almacenable: true, unidad: null, movimientos: [],
+    }]);
+
+    await expect(new InventarioService(db as never).listar(USER, COMPANY)).rejects.toMatchObject({
+      statusCode: 422,
+      code: 'UNIDAD_ARTICULO_NO_RESUELTA',
+      details: { articuloId: ARTICLE, unidadId: OUTPUT },
+    });
+  });
+
   it('rechaza una salida que deja stock negativo', async () => {
     const db = database();
     await expect(new InventarioService(db as never).registrar(USER, COMPANY, {

@@ -44809,6 +44809,27 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "unidad": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "simbolo": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "nombre",
+                            "simbolo"
+                          ],
+                          "additionalProperties": false
+                        },
                         "almacenable": {
                           "type": "boolean"
                         }
@@ -44818,6 +44839,7 @@
                         "codigo",
                         "descripcion",
                         "unidadId",
+                        "unidad",
                         "almacenable"
                       ],
                       "additionalProperties": true
@@ -45335,6 +45357,27 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "unidad": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "simbolo": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "simbolo"
+                            ],
+                            "additionalProperties": false
+                          },
                           "almacenable": {
                             "type": "boolean"
                           },
@@ -45353,6 +45396,7 @@
                           "codigo",
                           "descripcion",
                           "unidadId",
+                          "unidad",
                           "almacenable",
                           "saldoCantidad",
                           "saldoValor",

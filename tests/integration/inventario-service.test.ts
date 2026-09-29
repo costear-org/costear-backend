@@ -12,7 +12,7 @@ describe('FX-OT — inventario PPP con RLS real', () => {
   it('MOVIL valúa chapa, perfiles y abertura con flete y conserva 70 unidades', async () => {
     const service = new InventarioService();
     const unidad = await withTenant(tenant.userId, (tx) => tx.unidadMedida.create({ data: {
-      companyId: tenant.companyId, userId: tenant.userId, codigo: 'u-fx', nombre: 'Unidad', factor: 1,
+      companyId: tenant.companyId, userId: tenant.userId, codigo: 'u.', nombre: 'Unidad', factor: 1,
     } }));
     const order = await withTenant(tenant.userId, (tx) => tx.ordenTrabajo.create({ data: {
       companyId: tenant.companyId, userId: tenant.userId, codigo: 'OT-FX-INV', descripcion: 'Obra ficticia', cliente: 'Cliente ficticio',
@@ -22,6 +22,7 @@ describe('FX-OT — inventario PPP con RLS real', () => {
     } }));
     const create = (codigo: string) => service.crearArticulo(tenant.userId, tenant.companyId, { codigo, descripcion: codigo, unidadId: unidad.id, almacenable: true }, actor(tenant.userId));
     const chapa = await create('CHAPA'); const perfiles = await create('PERFILES'); const abertura = await create('ABERTURA');
+    expect(chapa.unidad).toEqual({ id: unidad.id, nombre: 'Unidad', simbolo: 'u.' });
     const move = (input: Parameters<InventarioService['registrar']>[2]) => service.registrar(tenant.userId, tenant.companyId, input, actor(tenant.userId));
     const common = { fecha: '2026-09-25', periodoImputado: '2026-09-01' };
     await move({ ...common, articuloId: chapa.id, tipo: 'INGRESO', cantidad: 100, costoUnitario: 1000, documento: 'Compra 1' });
@@ -39,7 +40,10 @@ describe('FX-OT — inventario PPP con RLS real', () => {
     expect(Number(salidaPerfiles.costoUnitario) * 60).toBe(24000);
     expect(Number(salidaAbertura.costoUnitario)).toBe(160000);
     expect(await service.listar(tenant.userId, tenant.companyId)).toEqual(expect.arrayContaining([
-      expect.objectContaining({ codigo: 'CHAPA', saldoCantidad: 75, saldoValor: 88500, ppp: 1180 }),
+      expect.objectContaining({
+        codigo: 'CHAPA', saldoCantidad: 75, saldoValor: 88500, ppp: 1180,
+        unidad: { id: unidad.id, nombre: 'Unidad', simbolo: 'u.' },
+      }),
     ]));
     expect(await withTenant(tenant.userId, (tx) => tx.traceAuditLog.count({ where: {
       entityType: 'MovimientoInventario', entityId: { in: [salida1.id, salida2.id, salidaPerfiles.id, salidaAbertura.id] },
