@@ -47,6 +47,8 @@ import { registerPrecioTransferenciaRoutes } from '../src/infrastructure/http/ro
 import { registerOrdenTrabajoRoutes } from '../src/infrastructure/http/routes/orden-trabajo.routes.js';
 import { registerInventarioRoutes } from '../src/infrastructure/http/routes/inventario.routes.js';
 import { registerPoolIndirectoRoutes } from '../src/infrastructure/http/routes/pool-indirecto.routes.js';
+import { registerUnidadMedidaRoutes } from '../src/infrastructure/http/routes/unidad-medida.routes.js';
+import { registerDepositoRoutes } from '../src/infrastructure/http/routes/deposito.routes.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
@@ -79,6 +81,8 @@ const CONVERTED_ROUTES = [
   registerOrdenTrabajoRoutes,
   registerInventarioRoutes,
   registerPoolIndirectoRoutes,
+  registerUnidadMedidaRoutes,
+  registerDepositoRoutes,
   (app) => registerEmpresaPortalRoutes(app, { portal: {} as never, scopes: {} as never }),
 ];
 

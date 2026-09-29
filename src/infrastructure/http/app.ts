@@ -31,6 +31,7 @@ import { registerProcessDepartmentRoutes } from './routes/process-department.rou
 import { registerProcessSetupRoutes } from './routes/process-setup.routes.js';
 import { registerUnitMovementRoutes } from './routes/unit-movement.routes.js';
 import { registerDepositoRoutes } from './routes/deposito.routes.js';
+import { registerUnidadMedidaRoutes } from './routes/unidad-medida.routes.js';
 import { registerInventarioRoutes } from './routes/inventario.routes.js';
 import { registerJointCostRoutes } from './routes/joint-cost.routes.js';
 import { registerProcessCalculationRoutes } from './routes/process-calculation.routes.js';
@@ -221,6 +222,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       await registerProcessSetupRoutes(api);
       await registerUnitMovementRoutes(api);
       await registerDepositoRoutes(api);
+      await registerUnidadMedidaRoutes(api);
       await registerInventarioRoutes(api);
       await registerJointCostRoutes(api);
       await registerProcessCalculationRoutes(api);

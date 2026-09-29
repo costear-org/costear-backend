@@ -2,8 +2,9 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { DepositoService } from '../../../application/operacion/deposito-service.js';
 import { authenticate } from '../plugins/authenticate.js';
-import { depositoCreateSchema, movimientoDepositoCreateSchema } from '../../../shared/schemas/deposito.schema.js';
+import { depositoCreateSchema, depositoEnvelopeSchema, movimientoDepositoCreateSchema } from '../../../shared/schemas/deposito.schema.js';
 import { OperatorScopeService } from '../../../application/empresa/operator-scope-service.js';
+import { apiErrorResponses } from '../../../shared/schemas/api-contract.schema.js';
 
 const companyParams = z.object({ companyId: z.string().uuid() });
 const depositoParams = z.object({ depositoId: z.string().uuid() });
@@ -12,7 +13,7 @@ const actor = (request: FastifyRequest) => ({ id: request.authUser!.id, role: re
 export async function registerDepositoRoutes(app: FastifyInstance): Promise<void> {
   const service = new DepositoService();
   const scopes = new OperatorScopeService();
-  app.post('/companies/:companyId/depositos', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/companies/:companyId/depositos', { preHandler: authenticate, schema: { body: depositoCreateSchema, response: { 201: depositoEnvelopeSchema, ...apiErrorResponses } } }, async (request, reply) => {
     const { companyId } = companyParams.parse(request.params);
     const tenantId = request.authUser!.role === 'EMPRESA_OPERATOR'
       ? await scopes.tenantForCompany(request.authUser!.id, companyId, 'inventario.mover')

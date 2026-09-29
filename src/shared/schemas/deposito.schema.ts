@@ -12,5 +12,6 @@ export const movimientoDepositoCreateSchema = z.object({
   cantidad: z.number().finite().positive(),
   fecha: z.string().date(),
 });
+export const depositoEnvelopeSchema = z.object({ data: z.object({ id: z.string().uuid() }).passthrough() });
 export type DepositoCreateInput = z.infer<typeof depositoCreateSchema>;
 export type MovimientoDepositoCreateInput = z.infer<typeof movimientoDepositoCreateSchema>;
