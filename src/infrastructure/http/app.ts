@@ -71,6 +71,7 @@ import { registerMezclaOptimaRoutes } from './routes/mezcla-optima.routes.js';
 import { registerPrecioTransferenciaRoutes } from './routes/precio-transferencia.routes.js';
 import { registerOrdenTrabajoRoutes } from './routes/orden-trabajo.routes.js';
 import { registerPoolIndirectoRoutes } from './routes/pool-indirecto.routes.js';
+import { registerPersonalRoutes } from './routes/personal.routes.js';
 import { createCorsOriginHandler } from './cors-policy.js';
 
 /**
@@ -245,6 +246,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       await registerPrecioTransferenciaRoutes(api);
       await registerOrdenTrabajoRoutes(api);
       await registerPoolIndirectoRoutes(api);
+      await registerPersonalRoutes(api);
       await registerActivoAmortizableRoutes(api);
       await registerEventosLoteRoutes(api);
       await registerLotesProductivosRoutes(api);

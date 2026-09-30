@@ -731,6 +731,18 @@ DROP POLICY IF EXISTS tenant_isolation ON tarifas_mano_obra;
 CREATE POLICY tenant_isolation ON tarifas_mano_obra
   USING ("userId" = current_app_user_id()) WITH CHECK ("userId" = current_app_user_id());
 
+ALTER TABLE categorias_personal ENABLE ROW LEVEL SECURITY;
+ALTER TABLE categorias_personal FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON categorias_personal;
+CREATE POLICY tenant_isolation ON categorias_personal
+  USING ("userId" = current_app_user_id()) WITH CHECK ("userId" = current_app_user_id());
+
+ALTER TABLE personas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE personas FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON personas;
+CREATE POLICY tenant_isolation ON personas
+  USING ("userId" = current_app_user_id()) WITH CHECK ("userId" = current_app_user_id());
+
 ALTER TABLE partes_horas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE partes_horas FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_select ON partes_horas;

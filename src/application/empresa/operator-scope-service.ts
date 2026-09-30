@@ -212,6 +212,15 @@ export class OperatorScopeService {
     return membership.connection.costistId;
   }
 
+  async tenantForCompanyAny(operatorId: string, companyId: string, permissions: PermisoOperador[]): Promise<string> {
+    const membership = await this.db.operatorMembership.findFirst({
+      where: { operatorId, isActive: true, permisos: { hasSome: permissions }, connection: { companyId } },
+      select: { connection: { select: { costistId: true } } },
+    });
+    if (!membership) throw new ForbiddenError('No tenés permisos para esta acción.');
+    return membership.connection.costistId;
+  }
+
   async tenantForCompanyAccess(operatorId: string, companyId: string): Promise<string> {
     const membership = await this.db.operatorMembership.findFirst({
       where: { operatorId, isActive: true, connection: { companyId } },

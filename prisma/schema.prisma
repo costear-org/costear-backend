@@ -287,6 +287,8 @@ model Company {
   politicaPrimaExtra           PoliticaPrimaExtra           @default(DENTRO_DE_TARIFA)
   politicaRetrabajo            PoliticaRetrabajo            @default(CIF_POOL)
   tarifasManoObra              TarifaManoObra[]
+  categoriasPersonal           CategoriaPersonal[]
+  personas                     Persona[]
 
   // Señal de la IA: el comprobante mostró indicios ("Factura C", "Consumidor
   // Final", "Monotributista", "Responsable No Inscripto") de que la condición
@@ -630,24 +632,60 @@ model VersionPresupuesto {
 
 /// Snapshot versionado de los insumos con los que el motor obtiene la tarifa integral.
 model TarifaManoObra {
-  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  companyId         String       @db.Uuid
-  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  userId            String       @db.Uuid
-  nombre            String       @db.VarChar(160)
-  basicRemuneration Decimal      @db.Decimal(18, 4)
-  hoursWorked       Decimal      @db.Decimal(18, 4)
-  productiveHours   Decimal?     @db.Decimal(18, 4)
-  standardHours     Decimal?     @db.Decimal(18, 4)
-  itcsPct           Decimal      @db.Decimal(9, 4)
-  primaExtraPct     Decimal      @default(50) @db.Decimal(9, 4)
-  vigenteDesde      DateTime     @db.Date
-  createdAt         DateTime     @default(now()) @db.Timestamptz
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId         String             @db.Uuid
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId            String             @db.Uuid
+  categoriaId       String?            @db.Uuid
+  categoria         CategoriaPersonal? @relation(fields: [categoriaId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  nombre            String             @db.VarChar(160)
+  basicRemuneration Decimal            @db.Decimal(18, 4)
+  hoursWorked       Decimal            @db.Decimal(18, 4)
+  productiveHours   Decimal?           @db.Decimal(18, 4)
+  standardHours     Decimal?           @db.Decimal(18, 4)
+  itcsPct           Decimal            @db.Decimal(9, 4)
+  primaExtraPct     Decimal            @default(50) @db.Decimal(9, 4)
+  vigenteDesde      DateTime           @db.Date
+  createdAt         DateTime           @default(now()) @db.Timestamptz
   partesHoras       ParteHoras[]
 
+  @@unique([companyId, categoriaId, vigenteDesde])
   @@index([userId])
   @@index([companyId, vigenteDesde])
   @@map("tarifas_mano_obra")
+}
+
+model CategoriaPersonal {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId String           @db.Uuid
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId    String           @db.Uuid
+  nombre    String           @db.VarChar(160)
+  personas  Persona[]
+  tarifas   TarifaManoObra[]
+  createdAt DateTime         @default(now()) @db.Timestamptz
+
+  @@unique([companyId, nombre])
+  @@index([userId])
+  @@map("categorias_personal")
+}
+
+model Persona {
+  id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId   String             @db.Uuid
+  company     Company            @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId      String             @db.Uuid
+  nombre      String             @db.VarChar(200)
+  categoriaId String?            @db.Uuid
+  categoria   CategoriaPersonal? @relation(fields: [categoriaId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  activa      Boolean            @default(true)
+  partesHoras ParteHoras[]
+  createdAt   DateTime           @default(now()) @db.Timestamptz
+  updatedAt   DateTime           @updatedAt @db.Timestamptz
+
+  @@index([userId])
+  @@index([companyId, activa, nombre])
+  @@map("personas")
 }
 
 model ParteHoras {
@@ -658,6 +696,7 @@ model ParteHoras {
   etapa                  EtapaOrden          @relation(fields: [etapaId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   userId                 String              @db.Uuid
   personaId              String              @db.Uuid
+  persona                Persona             @relation(fields: [personaId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   fecha                  DateTime            @db.Date
   horasNormales          Decimal             @db.Decimal(10, 4)
   horasExtra             Decimal             @db.Decimal(10, 4)

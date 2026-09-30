@@ -83,6 +83,9 @@ describe('FX-OT — orden de trabajo con RLS real', () => {
       companyId: A.companyId, userId: A.userId, nombre: 'Taller', basicRemuneration: 650000,
       hoursWorked: 130, itcsPct: 0, primaExtraPct: 50, vigenteDesde: new Date('2026-09-01T00:00:00Z'),
     } }));
+    const person = await withTenant(A.userId, (tx) => tx.persona.create({ data: {
+      companyId: A.companyId, userId: A.userId, nombre: 'Operario ficticio', activa: true,
+    } }));
     const additional = await withTenant(A.userId, (tx) => tx.versionPresupuesto.create({ data: {
       companyId: A.companyId, ordenId: order.id, userId: A.userId, tipo: 'ADICIONAL', numero: 1,
       vigenteDesde: new Date('2026-09-01T00:00:00Z'), vigenciaDias: 30, estado: 'APROBADO',
@@ -90,7 +93,7 @@ describe('FX-OT — orden de trabajo con RLS real', () => {
     } }));
     await withTenant(A.userId, (tx) => tx.company.update({ where: { id: A.companyId }, data: { politicaPrimaExtra: 'DIRECTA_CON_CAUSA' } }));
     const loaded = await parts.create(A.userId, order.id, {
-      personaId: A.userId, etapaId: stage.id, fecha: '2026-09-25', horasNormales: 120, horasExtra: 10,
+      personaId: person.id, etapaId: stage.id, fecha: '2026-09-25', horasNormales: 120, horasExtra: 10,
       tarifaId: rate.id, causaExtra: { texto: 'Cambio ficticio', versionPresupuestoId: additional.id },
     }, actor(A.userId));
     const approved = await parts.approve(A.userId, loaded.id, actor(A.userId));

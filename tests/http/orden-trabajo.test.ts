@@ -12,6 +12,7 @@ const { db, auth } = vi.hoisted(() => ({ auth: { role: 'EMPRESA_ADMIN' }, db: {
   versionPresupuesto: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   parametroCosteo: { findFirst: vi.fn() },
   tarifaManoObra: { findFirst: vi.fn() },
+  persona: { findFirst: vi.fn() },
   parteHoras: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   costoDirectoOrden: { findMany: vi.fn(), create: vi.fn() },
   eventoContingencia: { findMany: vi.fn(), create: vi.fn() },
@@ -218,6 +219,7 @@ describe('rutas de órdenes de trabajo', () => {
     db.ordenTrabajo.findFirst.mockResolvedValue({ id: ORDER, companyId: COMPANY, userId: USER, company: { politicaPrimaExtra: 'DENTRO_DE_TARIFA' } });
     db.etapaOrden.findFirst.mockResolvedValue({ id: COMPANY, ordenId: ORDER, esEntrega: false });
     db.tarifaManoObra.findFirst.mockResolvedValue({ id: COMPANY, companyId: COMPANY, nombre: 'Taller', basicRemuneration: '650000', hoursWorked: '130', productiveHours: null, standardHours: null, itcsPct: '0', primaExtraPct: '50' });
+    db.persona.findFirst.mockResolvedValue({ id: USER, companyId: COMPANY, activa: true });
     db.parteHoras.create.mockResolvedValue({ id: COMPANY, ordenId: ORDER, etapaId: COMPANY, personaId: USER, fecha: new Date('2026-09-25T00:00:00Z'), horasNormales: 8, horasExtra: 0, tarifaId: COMPANY, tarifaHora: 5000, primaExtraHora: 0, importeMod: null, estado: 'CARGADO' });
     const api = await app();
     const res = await api.inject({ method: 'POST', url: `/ordenes-trabajo/${ORDER}/partes-horas`, payload: {

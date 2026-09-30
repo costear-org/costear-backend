@@ -9,7 +9,7 @@ const EXTRA = '66666666-6666-6666-6666-666666666666';
 
 const { db, recordTraceAudit } = vi.hoisted(() => ({
   db: {
-    ordenTrabajo: { findFirst: vi.fn() }, etapaOrden: { findFirst: vi.fn() }, tarifaManoObra: { findFirst: vi.fn() },
+    ordenTrabajo: { findFirst: vi.fn() }, etapaOrden: { findFirst: vi.fn() }, tarifaManoObra: { findFirst: vi.fn() }, persona: { findFirst: vi.fn() },
     versionPresupuesto: { findFirst: vi.fn() }, parteHoras: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   },
   recordTraceAudit: vi.fn(async () => undefined),
@@ -25,7 +25,17 @@ describe('ParteHorasService', () => {
     db.ordenTrabajo.findFirst.mockResolvedValue({ id: ORDER, companyId: USER, userId: USER, company: { politicaPrimaExtra: 'DENTRO_DE_TARIFA' } });
     db.etapaOrden.findFirst.mockResolvedValue({ id: STAGE, ordenId: ORDER, esEntrega: false });
     db.tarifaManoObra.findFirst.mockResolvedValue({ id: RATE, companyId: USER, basicRemuneration: '650000', hoursWorked: '130', productiveHours: null, standardHours: null, itcsPct: '0', primaExtraPct: '50' });
+    db.persona.findFirst.mockResolvedValue({ id: USER, companyId: USER, activa: true });
     db.parteHoras.create.mockImplementation(async ({ data }: { data: object }) => ({ id: PART, estado: 'CARGADO', ...data }));
+  });
+
+  it('rechaza un parte nuevo para una persona inactiva', async () => {
+    const { ParteHorasService } = await import('@/application/ordenes/parte-horas-service.js');
+    db.persona.findFirst.mockResolvedValue({ id: USER, companyId: USER, activa: false });
+    await expect(new ParteHorasService(db as never).create(USER, ORDER, {
+      personaId: USER, etapaId: STAGE, fecha: '2026-09-25', horasNormales: 8, horasExtra: 0, tarifaId: RATE,
+    }, actor)).rejects.toMatchObject({ code: 'INACTIVE_PERSON', statusCode: 422 });
+    expect(db.parteHoras.create).not.toHaveBeenCalled();
   });
 
   it('rechaza primero una prima directa sin adicional aprobado', async () => {
