@@ -3,7 +3,7 @@ import { Decimal } from 'decimal.js';
 import { prisma, withTenant } from '../../infrastructure/database/prisma.js';
 import { ConflictError, NotFoundError, UnprocessableEntityError } from '../../domain/errors/domain-error.js';
 import { recordTraceAudit, type TraceActor } from '../audit/trace-audit.js';
-import type { ArticuloCreateInput, MovimientoInventarioCreateInput } from '../../shared/schemas/inventario.schema.js';
+import type { ArticuloCreateInput, MovimientoInventarioCreateInput, SalidasElegiblesQuery } from '../../shared/schemas/inventario.schema.js';
 
 class StockInsuficienteError extends UnprocessableEntityError { override readonly code = 'STOCK_INSUFICIENTE'; }
 class CantidadOrigenExcedidaError extends UnprocessableEntityError { override readonly code = 'CANTIDAD_ORIGEN_EXCEDIDA'; }
@@ -72,6 +72,46 @@ export class InventarioService {
           saldoValor: v.value.toNumber(),
           ppp: v.ppp.toNumber(),
         };
+      });
+    });
+  }
+
+  async listarSalidasElegibles(userId: string, companyId: string, query: SalidasElegiblesQuery) {
+    return this.run(userId, async (tx) => {
+      if (!await tx.company.findFirst({ where: { id: companyId, userId } })) throw new NotFoundError('Negocio no encontrado');
+      const outputs = await tx.movimientoInventario.findMany({
+        where: {
+          companyId,
+          tipo: 'SALIDA',
+          ...(query.articuloId ? { articuloId: query.articuloId } : {}),
+          ...(query.ordenId ? { ordenId: query.ordenId } : {}),
+        },
+        include: {
+          derivados: {
+            where: { tipo: { in: ['DEVOLUCION', 'TRANSFERENCIA'] } },
+            select: { tipo: true, cantidad: true },
+          },
+        },
+        orderBy: [{ fecha: 'desc' }, { createdAt: 'desc' }],
+      });
+      return outputs.flatMap((output) => {
+        const original = new Decimal(output.cantidad.toString());
+        const used = output.derivados.reduce(
+          (sum, derived) => sum.plus(derived.cantidad.toString()),
+          new Decimal(0),
+        );
+        const available = original.minus(used);
+        if (!available.gt(0) || !output.ordenId) return [];
+        return [{
+          id: output.id,
+          articuloId: output.articuloId,
+          ordenId: output.ordenId,
+          cantidadOriginal: original.toNumber(),
+          cantidadDisponible: available.toNumber(),
+          fecha: output.fecha.toISOString().slice(0, 10),
+          documento: output.documento,
+          costoUnitario: Number(output.costoUnitario),
+        }];
       });
     });
   }

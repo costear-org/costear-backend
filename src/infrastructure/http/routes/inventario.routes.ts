@@ -5,7 +5,7 @@ import { InventarioService } from '../../../application/inventario/inventario-se
 import { authenticate } from '../plugins/authenticate.js';
 import { apiErrorResponses } from '../../../shared/schemas/api-contract.schema.js';
 import { OperatorScopeService } from '../../../application/empresa/operator-scope-service.js';
-import { articuloCreateSchema, articuloEnvelopeSchema, articulosEnvelopeSchema, movimientoInventarioCreateSchema, movimientoInventarioEnvelopeSchema } from '../../../shared/schemas/inventario.schema.js';
+import { articuloCreateSchema, articuloEnvelopeSchema, articulosEnvelopeSchema, movimientoInventarioCreateSchema, movimientoInventarioEnvelopeSchema, salidasElegiblesEnvelopeSchema, salidasElegiblesQuerySchema } from '../../../shared/schemas/inventario.schema.js';
 
 const params = z.object({ companyId: z.string().uuid() });
 const actor = (request: FastifyRequest) => ({ id: request.authUser!.id, role: request.authUser!.role, jobTitle: request.authUser!.jobTitle, area: 'costista', method: 'manual', device: `${request.headers['user-agent'] ?? 'desconocido'} · ${request.ip}` });
@@ -29,6 +29,12 @@ export async function registerInventarioRoutes(app: FastifyInstance): Promise<vo
   contract.post('/companies/:companyId/movimientos-inventario', { preHandler: authenticate, schema: { body: movimientoInventarioCreateSchema, response: { 201: movimientoInventarioEnvelopeSchema, ...apiErrorResponses } } }, async (request, reply) => {
     const { companyId } = params.parse(request.params);
     const tenantId = request.authUser!.role === 'EMPRESA_OPERATOR' ? await scopes.tenantForCompany(request.authUser!.id, companyId, 'inventario.mover') : request.authUser!.id;
-    return reply.code(201).send({ data: await service.registrar(tenantId, companyId, movimientoInventarioCreateSchema.parse(request.body), actor(request)) });
+    const movement = await service.registrar(tenantId, companyId, movimientoInventarioCreateSchema.parse(request.body), actor(request));
+    return reply.code(201).send({ data: { ...movement, costoUnitario: Number(movement.costoUnitario) } });
+  });
+  contract.get('/companies/:companyId/movimientos-inventario', { preHandler: authenticate, schema: { querystring: salidasElegiblesQuerySchema, response: { 200: salidasElegiblesEnvelopeSchema, ...apiErrorResponses } } }, async (request) => {
+    const { companyId } = params.parse(request.params);
+    const tenantId = request.authUser!.role === 'EMPRESA_OPERATOR' ? await scopes.tenantForCompany(request.authUser!.id, companyId, 'inventario.mover') : request.authUser!.id;
+    return { data: await service.listarSalidasElegibles(tenantId, companyId, salidasElegiblesQuerySchema.parse(request.query)) };
   });
 }

@@ -4,8 +4,12 @@ import { withTenant } from '@/infrastructure/database/prisma.js';
 import { createTenant, disconnect, type Tenant } from './helpers/tenants.js';
 
 let tenant: Tenant;
+let otherTenant: Tenant;
 const actor = (id: string) => ({ id, role: 'EMPRESA_ADMIN', area: 'costista', method: 'manual' });
-beforeAll(async () => { tenant = await createTenant('inventario-ppp'); });
+beforeAll(async () => {
+  tenant = await createTenant('inventario-ppp');
+  otherTenant = await createTenant('inventario-elegibles-otro');
+});
 afterAll(disconnect);
 
 describe('FX-OT — inventario PPP con RLS real', () => {
@@ -69,5 +73,35 @@ describe('FX-OT — inventario PPP con RLS real', () => {
     expect(await withTenant(tenant.userId, (tx) => tx.movimientoInventario.count({ where: {
       companyId: tenant.companyId, identidadExterna: importedInput.identidadExterna, documentoHash: importedInput.documentoHash,
     } }))).toBe(1);
+
+    await move({
+      ...common, articuloId: abertura.id, tipo: 'DEVOLUCION', cantidad: 1,
+      movimientoOrigenId: salidaAbertura.id, documento: 'Devolución total abertura',
+    });
+    const otherUnit = await withTenant(otherTenant.userId, (tx) => tx.unidadMedida.create({ data: {
+      companyId: otherTenant.companyId, userId: otherTenant.userId, codigo: 'kg', nombre: 'Kilogramo', factor: 1,
+    } }));
+    const otherOrder = await withTenant(otherTenant.userId, (tx) => tx.ordenTrabajo.create({ data: {
+      companyId: otherTenant.companyId, userId: otherTenant.userId, codigo: 'OT-AJENA', descripcion: 'Obra ajena ficticia', cliente: 'Cliente ficticio',
+    } }));
+    const otherService = new InventarioService();
+    const otherArticle = await otherService.crearArticulo(otherTenant.userId, otherTenant.companyId, {
+      codigo: 'AJENO', descripcion: 'Artículo ajeno', unidadId: otherUnit.id, almacenable: true,
+    }, actor(otherTenant.userId));
+    await otherService.registrar(otherTenant.userId, otherTenant.companyId, {
+      ...common, articuloId: otherArticle.id, tipo: 'INGRESO', cantidad: 10, costoUnitario: 50,
+    }, actor(otherTenant.userId));
+    const otherOutput = await otherService.registrar(otherTenant.userId, otherTenant.companyId, {
+      ...common, articuloId: otherArticle.id, tipo: 'SALIDA', cantidad: 2, ordenId: otherOrder.id,
+    }, actor(otherTenant.userId));
+
+    const eligible = await service.listarSalidasElegibles(tenant.userId, tenant.companyId, {});
+    expect(eligible).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: salida2.id, cantidadOriginal: 30, cantidadDisponible: 20 }),
+    ]));
+    expect(eligible).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: salidaAbertura.id }),
+      expect.objectContaining({ id: otherOutput.id }),
+    ]));
   });
 });

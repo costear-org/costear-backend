@@ -26,6 +26,12 @@ export const movimientoInventarioCreateSchema = z.object({
 export type ArticuloCreateInput = z.infer<typeof articuloCreateSchema>;
 export type MovimientoInventarioCreateInput = z.infer<typeof movimientoInventarioCreateSchema>;
 
+export const salidasElegiblesQuerySchema = z.object({
+  articuloId: z.string().uuid().optional(),
+  ordenId: z.string().uuid().optional(),
+});
+export type SalidasElegiblesQuery = z.infer<typeof salidasElegiblesQuerySchema>;
+
 const unidadArticuloSchema = z.object({
   id: z.string().uuid(), nombre: z.string(), simbolo: z.string(),
 });
@@ -41,4 +47,12 @@ export const articuloCreadoSchema = z.object({
 }).passthrough();
 export const articuloEnvelopeSchema = z.object({ data: articuloCreadoSchema });
 export const articulosEnvelopeSchema = z.object({ data: z.array(articuloSchema) });
-export const movimientoInventarioEnvelopeSchema = z.object({ data: z.object({ id: z.string().uuid() }).passthrough() });
+export const movimientoInventarioEnvelopeSchema = z.object({
+  data: z.object({ id: z.string().uuid(), costoUnitario: z.coerce.number().nonnegative() }).passthrough(),
+});
+export const salidaElegibleSchema = z.object({
+  id: z.string().uuid(), articuloId: z.string().uuid(), ordenId: z.string().uuid(),
+  cantidadOriginal: z.number().positive(), cantidadDisponible: z.number().positive(),
+  fecha: z.string().date(), documento: z.string().nullable(), costoUnitario: z.number().nonnegative(),
+});
+export const salidasElegiblesEnvelopeSchema = z.object({ data: z.array(salidaElegibleSchema) });

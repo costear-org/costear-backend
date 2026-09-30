@@ -34,6 +34,42 @@ function listingDatabase(articles: unknown[]) {
 }
 
 describe('InventarioService — caminos de falla antes de persistir', () => {
+  it('lista sólo salidas elegibles de la empresa y descuenta devoluciones y transferencias', async () => {
+    const tx = {
+      company: { findFirst: vi.fn().mockResolvedValue({ id: COMPANY }) },
+      movimientoInventario: { findMany: vi.fn().mockResolvedValue([
+        {
+          id: OUTPUT, articuloId: ARTICLE, ordenId: ORDER, cantidad: 30, costoUnitario: 1180,
+          fecha: new Date('2026-09-25T00:00:00.000Z'), documento: 'Vale 2',
+          derivados: [{ tipo: 'DEVOLUCION', cantidad: 5 }, { tipo: 'TRANSFERENCIA', cantidad: 10 }],
+        },
+        {
+          id: '88888888-8888-4888-8888-888888888888', articuloId: ARTICLE, ordenId: ORDER,
+          cantidad: 8, costoUnitario: 1180, fecha: new Date('2026-09-26T00:00:00.000Z'), documento: 'Vale agotado',
+          derivados: [{ tipo: 'DEVOLUCION', cantidad: 8 }],
+        },
+      ]) },
+      $transaction: vi.fn(async (fn: (client: typeof tx) => unknown) => fn(tx)),
+    };
+
+    await expect(new InventarioService(tx as never).listarSalidasElegibles(USER, COMPANY, {
+      articuloId: ARTICLE,
+      ordenId: ORDER,
+    })).resolves.toEqual([{
+      id: OUTPUT,
+      articuloId: ARTICLE,
+      ordenId: ORDER,
+      cantidadOriginal: 30,
+      cantidadDisponible: 15,
+      fecha: '2026-09-25',
+      documento: 'Vale 2',
+      costoUnitario: 1180,
+    }]);
+    expect(tx.movimientoInventario.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { companyId: COMPANY, tipo: 'SALIDA', articuloId: ARTICLE, ordenId: ORDER },
+    }));
+  });
+
   it('falla explícitamente si no puede resolver la unidad de un artículo listado', async () => {
     const db = listingDatabase([{
       id: ARTICLE, companyId: COMPANY, codigo: 'CHAPA', descripcion: 'Chapa', unidadId: OUTPUT,
