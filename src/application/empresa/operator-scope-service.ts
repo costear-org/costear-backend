@@ -266,6 +266,24 @@ export class OperatorScopeService {
     return allowed.userId;
   }
 
+  async tenantForCostoDirecto(operatorId: string, costoId: string, permission: PermisoOperador): Promise<string> {
+    const allowed = await this.db.costoDirectoOrden.findFirst({
+      where: { id: costoId, orden: { operadoresAutorizados: { some: { membership: { operatorId, isActive: true, permisos: { has: permission } } } } } },
+      select: { userId: true },
+    });
+    if (!allowed) throw new ForbiddenError('No tenés autorización para acceder a ese costo directo.');
+    return allowed.userId;
+  }
+
+  async tenantForContingencia(operatorId: string, contingenciaId: string, permission: PermisoOperador): Promise<string> {
+    const allowed = await this.db.eventoContingencia.findFirst({
+      where: { id: contingenciaId, orden: { operadoresAutorizados: { some: { membership: { operatorId, isActive: true, permisos: { has: permission } } } } } },
+      select: { userId: true },
+    });
+    if (!allowed) throw new ForbiddenError('No tenés autorización para acceder a esa contingencia.');
+    return allowed.userId;
+  }
+
   async ordenIds(operatorId: string, companyId: string): Promise<string[]> {
     const rows = await this.db.operatorOrdenTrabajo.findMany({
       where: { orden: { companyId }, membership: { operatorId, isActive: true, permisos: { has: 'ordenes.ver' } } },

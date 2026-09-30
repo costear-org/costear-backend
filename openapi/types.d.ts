@@ -15809,20 +15809,24 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            data: ({
+                            data: {
                                 /** Format: uuid */
                                 id: string;
                                 /** Format: uuid */
                                 ordenId: string;
                                 /** Format: uuid */
                                 etapaId: string;
-                                importe: number;
                                 /** @enum {string} */
-                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO";
+                                categoria: "TERCEROS" | "TRANSPORTE" | "GRUA" | "VIATICOS" | "COMPRA_EXCLUSIVA" | "OTRO";
+                                importe: number;
+                                documento: string | null;
+                                /** Format: date */
+                                periodoImputado: string;
+                                /** @enum {string} */
+                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO" | "RECHAZADO";
+                                motivoRechazo: string | null;
                                 impactaCosto: boolean;
-                            } & {
-                                [key: string]: unknown;
-                            })[];
+                            }[];
                             resumen: {
                                 totalValidado: number;
                                 entregaInstalacionValidada: number;
@@ -16031,12 +16035,16 @@ export interface paths {
                                 ordenId: string;
                                 /** Format: uuid */
                                 etapaId: string;
-                                importe: number;
                                 /** @enum {string} */
-                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO";
+                                categoria: "TERCEROS" | "TRANSPORTE" | "GRUA" | "VIATICOS" | "COMPRA_EXCLUSIVA" | "OTRO";
+                                importe: number;
+                                documento: string | null;
+                                /** Format: date */
+                                periodoImputado: string;
+                                /** @enum {string} */
+                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO" | "RECHAZADO";
+                                motivoRechazo: string | null;
                                 impactaCosto: boolean;
-                            } & {
-                                [key: string]: unknown;
                             };
                         };
                     };
@@ -16234,21 +16242,30 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            data: ({
+                            data: {
                                 /** Format: uuid */
                                 id: string;
                                 /** Format: uuid */
                                 ordenId: string;
                                 /** Format: uuid */
                                 etapaId: string;
+                                /** @enum {string} */
+                                tipo: "DESPERDICIO" | "SOBRANTE" | "ROTURA" | "FALLA" | "RETRABAJO";
                                 cantidad: number;
+                                unidad: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    nombre: string;
+                                    simbolo: string;
+                                } | null;
                                 valor: number;
                                 recupero: number | null;
+                                causa: string;
+                                tratamiento: string;
                                 /** @enum {string} */
-                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO";
-                            } & {
-                                [key: string]: unknown;
-                            })[];
+                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO" | "RECHAZADO";
+                                motivoRechazo: string | null;
+                            }[];
                             resumen: {
                                 perdidaPeriodoValidada: number;
                                 cifPoolValidado: number;
@@ -16442,6 +16459,8 @@ export interface paths {
                         causa: string;
                         tratamiento: string;
                         /** Format: uuid */
+                        unidadId?: string | null;
+                        /** Format: uuid */
                         versionPresupuestoId?: string | null;
                     };
                 };
@@ -16461,13 +16480,910 @@ export interface paths {
                                 ordenId: string;
                                 /** Format: uuid */
                                 etapaId: string;
+                                /** @enum {string} */
+                                tipo: "DESPERDICIO" | "SOBRANTE" | "ROTURA" | "FALLA" | "RETRABAJO";
                                 cantidad: number;
+                                unidad: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    nombre: string;
+                                    simbolo: string;
+                                } | null;
                                 valor: number;
                                 recupero: number | null;
+                                causa: string;
+                                tratamiento: string;
                                 /** @enum {string} */
-                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO";
-                            } & {
-                                [key: string]: unknown;
+                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO" | "RECHAZADO";
+                                motivoRechazo: string | null;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/costos-directos/{id}/validar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                ordenId: string;
+                                /** Format: uuid */
+                                etapaId: string;
+                                /** @enum {string} */
+                                categoria: "TERCEROS" | "TRANSPORTE" | "GRUA" | "VIATICOS" | "COMPRA_EXCLUSIVA" | "OTRO";
+                                importe: number;
+                                documento: string | null;
+                                /** Format: date */
+                                periodoImputado: string;
+                                /** @enum {string} */
+                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO" | "RECHAZADO";
+                                motivoRechazo: string | null;
+                                impactaCosto: boolean;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/costos-directos/{id}/rechazar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        motivo: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                ordenId: string;
+                                /** Format: uuid */
+                                etapaId: string;
+                                /** @enum {string} */
+                                categoria: "TERCEROS" | "TRANSPORTE" | "GRUA" | "VIATICOS" | "COMPRA_EXCLUSIVA" | "OTRO";
+                                importe: number;
+                                documento: string | null;
+                                /** Format: date */
+                                periodoImputado: string;
+                                /** @enum {string} */
+                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO" | "RECHAZADO";
+                                motivoRechazo: string | null;
+                                impactaCosto: boolean;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contingencias/{id}/validar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                ordenId: string;
+                                /** Format: uuid */
+                                etapaId: string;
+                                /** @enum {string} */
+                                tipo: "DESPERDICIO" | "SOBRANTE" | "ROTURA" | "FALLA" | "RETRABAJO";
+                                cantidad: number;
+                                unidad: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    nombre: string;
+                                    simbolo: string;
+                                } | null;
+                                valor: number;
+                                recupero: number | null;
+                                causa: string;
+                                tratamiento: string;
+                                /** @enum {string} */
+                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO" | "RECHAZADO";
+                                motivoRechazo: string | null;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code?: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                } | {
+                                    field: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contingencias/{id}/rechazar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        motivo: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                ordenId: string;
+                                /** Format: uuid */
+                                etapaId: string;
+                                /** @enum {string} */
+                                tipo: "DESPERDICIO" | "SOBRANTE" | "ROTURA" | "FALLA" | "RETRABAJO";
+                                cantidad: number;
+                                unidad: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    nombre: string;
+                                    simbolo: string;
+                                } | null;
+                                valor: number;
+                                recupero: number | null;
+                                causa: string;
+                                tratamiento: string;
+                                /** @enum {string} */
+                                estadoValidacion: "PENDIENTE" | "VALIDADO" | "MARCADO" | "RECHAZADO";
+                                motivoRechazo: string | null;
                             };
                         };
                     };

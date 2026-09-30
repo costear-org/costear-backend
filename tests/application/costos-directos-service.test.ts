@@ -8,7 +8,9 @@ const actor = { id: USER, role: 'EMPRESA_ADMIN', area: 'costista', method: 'manu
 const { db, recordTraceAudit } = vi.hoisted(() => ({
   db: {
     ordenTrabajo: { findFirst: vi.fn() }, etapaOrden: { findFirst: vi.fn() }, versionPresupuesto: { findFirst: vi.fn() },
-    costoDirectoOrden: { create: vi.fn(), findMany: vi.fn() }, eventoContingencia: { create: vi.fn(), findMany: vi.fn() },
+    costoDirectoOrden: { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+    eventoContingencia: { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+    unidadMedida: { findFirst: vi.fn() },
   }, recordTraceAudit: vi.fn(async () => undefined),
 }));
 vi.mock('@/infrastructure/database/prisma.js', () => ({ prisma: db, withTenant: async (_id: string, fn: (tx: typeof db) => unknown) => fn(db) }));
@@ -39,6 +41,29 @@ describe('CostosDirectosService', () => {
     ]);
     const result = await new CostosDirectosService(db as never).listCostos(USER, ORDER);
     expect(result.resumen).toEqual({ totalValidado: 290000, entregaInstalacionValidada: 290000 });
+  });
+
+  it('rechaza validar un costo ya validado con 409', async () => {
+    const { CostosDirectosService } = await import('@/application/ordenes/costos-directos-service.js');
+    db.costoDirectoOrden.findFirst.mockResolvedValue({ id: EXTRA, userId: USER, estadoValidacion: 'VALIDADO', orden: { estado: 'PENDIENTE_CIERRE' } });
+    await expect(new CostosDirectosService(db as never).validateCosto(USER, EXTRA, actor)).rejects.toMatchObject({ statusCode: 409 });
+    expect(db.costoDirectoOrden.update).not.toHaveBeenCalled();
+  });
+
+  it('rechaza validar un costo de una orden cerrada con 409', async () => {
+    const { CostosDirectosService } = await import('@/application/ordenes/costos-directos-service.js');
+    db.costoDirectoOrden.findFirst.mockResolvedValue({ id: EXTRA, userId: USER, estadoValidacion: 'PENDIENTE', orden: { estado: 'CERRADA' } });
+    await expect(new CostosDirectosService(db as never).validateCosto(USER, EXTRA, actor)).rejects.toMatchObject({ statusCode: 409 });
+  });
+
+  it('rechaza una contingencia conservando el motivo y auditando en la transacción', async () => {
+    const { CostosDirectosService } = await import('@/application/ordenes/costos-directos-service.js');
+    const pendiente = { id: EXTRA, userId: USER, estadoValidacion: 'MARCADO', orden: { estado: 'PENDIENTE_CIERRE' } };
+    db.eventoContingencia.findFirst.mockResolvedValue(pendiente);
+    db.eventoContingencia.update.mockResolvedValue({ ...pendiente, estadoValidacion: 'RECHAZADO', motivoRechazo: 'Carga duplicada', cantidad: '1', valor: '50000', recupero: null, unidad: null });
+    const result = await new CostosDirectosService(db as never).rejectContingencia(USER, EXTRA, 'Carga duplicada', actor);
+    expect(result).toMatchObject({ estadoValidacion: 'RECHAZADO', motivoRechazo: 'Carga duplicada' });
+    expect(recordTraceAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'reject', before: pendiente }), db);
   });
 
   it('marca cambio del cliente sin adicional aprobado', async () => {

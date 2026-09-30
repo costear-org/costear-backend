@@ -37,6 +37,16 @@ describe('CierreOrdenService', () => {
     expect(db.fotoCierreOrden.create).not.toHaveBeenCalled();
   });
 
+  it('bloquea el cierre mientras una contingencia siga marcada', async () => {
+    const { CierreOrdenService } = await import('@/application/ordenes/cierre-orden-service.js');
+    db.ordenTrabajo.findFirst.mockResolvedValue({
+      id: ORDER, userId: USER, estado: 'PENDIENTE_CIERRE', presupuestos: [], partesHoras: [], costosDirectos: [],
+      contingencias: [{ id: 'contingencia-1', estadoValidacion: 'MARCADO' }], aplicacionesIndirectos: [],
+    });
+    await expect(new CierreOrdenService(db as never).close(USER, ORDER, actor))
+      .rejects.toMatchObject({ statusCode: 422, details: { pendientes: [{ tipo: 'CONTINGENCIA', id: 'contingencia-1' }] } });
+  });
+
   it('rechaza reabrir sin motivo', async () => {
     const { CierreOrdenService } = await import('@/application/ordenes/cierre-orden-service.js');
     await expect(new CierreOrdenService(db as never).reopen(USER, ORDER, { motivo: ' ' }, actor))

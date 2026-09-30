@@ -333,6 +333,7 @@ enum EstadoValidacionOrden {
   PENDIENTE
   VALIDADO
   MARCADO
+  RECHAZADO
 }
 
 enum CategoriaCostoDirectoOrden {
@@ -731,6 +732,7 @@ model CostoDirectoOrden {
   documento        String?                    @db.VarChar(500)
   periodoImputado  DateTime                   @db.Date
   estadoValidacion EstadoValidacionOrden      @default(PENDIENTE)
+  motivoRechazo    String?                    @db.VarChar(500)
   createdAt        DateTime                   @default(now()) @db.Timestamptz
 
   @@index([userId])
@@ -747,6 +749,8 @@ model EventoContingencia {
   userId               String                 @db.Uuid
   tipo                 TipoEventoContingencia
   cantidad             Decimal                @db.Decimal(18, 4)
+  unidadId             String?                @db.Uuid
+  unidad               UnidadMedida?          @relation(fields: [unidadId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   valor                Decimal                @db.Decimal(18, 4)
   recupero             Decimal?               @db.Decimal(18, 4)
   causa                String                 @db.VarChar(500)
@@ -755,9 +759,11 @@ model EventoContingencia {
   versionPresupuestoId String?                @db.Uuid
   versionPresupuesto   VersionPresupuesto?    @relation(fields: [versionPresupuestoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   estadoValidacion     EstadoValidacionOrden  @default(PENDIENTE)
+  motivoRechazo        String?                @db.VarChar(500)
   createdAt            DateTime               @default(now()) @db.Timestamptz
 
   @@index([userId])
+  @@index([unidadId])
   @@index([ordenId, createdAt])
   @@map("eventos_contingencia")
 }
@@ -3063,6 +3069,7 @@ model UnidadMedida {
   articulos              Articulo[]
   ventasProducto         VentaProducto[]
   recursosEscasos        RecursoEscaso[]
+  eventosContingencia    EventoContingencia[]
   id                     String                @id @default(uuid()) @db.Uuid
   companyId              String                @db.Uuid
   company                Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)

@@ -14,8 +14,9 @@ const { db, auth } = vi.hoisted(() => ({ auth: { role: 'EMPRESA_ADMIN' }, db: {
   tarifaManoObra: { findFirst: vi.fn() },
   persona: { findFirst: vi.fn() },
   parteHoras: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
-  costoDirectoOrden: { findMany: vi.fn(), create: vi.fn() },
-  eventoContingencia: { findMany: vi.fn(), create: vi.fn() },
+  costoDirectoOrden: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
+  eventoContingencia: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
+  unidadMedida: { findFirst: vi.fn() },
   fotoCierreOrden: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
   traceAuditLog: { create: vi.fn() },
   operatorMembership: { findFirst: vi.fn() },
@@ -300,5 +301,49 @@ describe('rutas de órdenes de trabajo', () => {
     } });
     expect(res.statusCode).toBe(400);
     expect(db.eventoContingencia.create).not.toHaveBeenCalled();
+  });
+
+  it('un operador sin ordenes.cerrar recibe 403 al validar un costo directo', async () => {
+    auth.role = 'EMPRESA_OPERATOR';
+    db.operatorOrdenTrabajo.findFirst.mockResolvedValue(null);
+    const api = await app();
+    const res = await api.inject({ method: 'POST', url: `/costos-directos/${ORDER}/validar` });
+    expect(res.statusCode).toBe(403);
+    expect(db.costoDirectoOrden.update).not.toHaveBeenCalled();
+  });
+
+  it('un operador sin ordenes.ver_margen recibe 403 al listar costos directos', async () => {
+    auth.role = 'EMPRESA_OPERATOR';
+    db.operatorOrdenTrabajo.findFirst.mockResolvedValue(null);
+    const api = await app();
+    const res = await api.inject({ method: 'GET', url: `/ordenes-trabajo/${ORDER}/costos-directos` });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('los listados publican exactamente el contrato de costos y contingencias', async () => {
+    db.ordenTrabajo.findFirst.mockResolvedValue({ id: ORDER });
+    db.costoDirectoOrden.findMany.mockResolvedValue([{
+      id: USER, ordenId: ORDER, etapaId: COMPANY, categoria: 'TRANSPORTE', importe: '180000', documento: 'FAC-1',
+      periodoImputado: new Date('2026-09-01T00:00:00Z'), estadoValidacion: 'VALIDADO', motivoRechazo: null,
+      createdAt: new Date(), userId: USER, etapa: { esEntrega: true },
+    }]);
+    db.eventoContingencia.findMany.mockResolvedValue([{
+      id: COMPANY, ordenId: ORDER, etapaId: COMPANY, tipo: 'ROTURA', cantidad: '2', valor: '50000', recupero: null,
+      causa: 'Rotura ficticia', tratamiento: 'Reposición', estadoValidacion: 'PENDIENTE', motivoRechazo: null,
+      unidad: { id: USER, nombre: 'Metro cuadrado', codigo: 'm2' }, createdAt: new Date(), userId: USER,
+    }]);
+    const api = await app();
+    const costs = await api.inject({ method: 'GET', url: `/ordenes-trabajo/${ORDER}/costos-directos` });
+    const incidents = await api.inject({ method: 'GET', url: `/ordenes-trabajo/${ORDER}/contingencias` });
+    expect(Object.keys(costs.json().data[0]).sort()).toEqual(['categoria', 'documento', 'estadoValidacion', 'etapaId', 'id', 'impactaCosto', 'importe', 'motivoRechazo', 'ordenId', 'periodoImputado'].sort());
+    expect(Object.keys(incidents.json().data[0]).sort()).toEqual(['cantidad', 'causa', 'estadoValidacion', 'etapaId', 'id', 'motivoRechazo', 'ordenId', 'recupero', 'tipo', 'tratamiento', 'unidad', 'valor'].sort());
+    expect(incidents.json().data[0].unidad).toEqual({ id: USER, nombre: 'Metro cuadrado', simbolo: 'm2' });
+  });
+
+  it('rechazar un costo directo sin motivo devuelve 400', async () => {
+    const api = await app();
+    const res = await api.inject({ method: 'POST', url: `/costos-directos/${ORDER}/rechazar`, payload: {} });
+    expect(res.statusCode).toBe(400);
+    expect(db.costoDirectoOrden.update).not.toHaveBeenCalled();
   });
 });

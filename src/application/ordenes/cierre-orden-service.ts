@@ -31,8 +31,8 @@ export class CierreOrdenService {
     if (order.estado !== 'PENDIENTE_CIERRE') throw new InvalidCloseStateError('La orden debe estar pendiente de cierre');
     const pendientes = [
       ...order.partesHoras.filter((x) => x.estado !== 'APROBADO').map((x) => ({ tipo: 'PARTE_HORAS', id: x.id })),
-      ...order.costosDirectos.filter((x) => x.estadoValidacion === 'PENDIENTE').map((x) => ({ tipo: 'FACTURA_O_COSTO', id: x.id })),
-      ...order.contingencias.filter((x) => x.estadoValidacion === 'PENDIENTE').map((x) => ({ tipo: 'CONTINGENCIA', id: x.id })),
+      ...order.costosDirectos.filter((x) => x.estadoValidacion === 'PENDIENTE' || x.estadoValidacion === 'MARCADO').map((x) => ({ tipo: 'FACTURA_O_COSTO', id: x.id })),
+      ...order.contingencias.filter((x) => x.estadoValidacion === 'PENDIENTE' || x.estadoValidacion === 'MARCADO').map((x) => ({ tipo: 'CONTINGENCIA', id: x.id })),
       ...order.presupuestos.filter((x) => x.estado === 'BORRADOR' || x.estado === 'PREPARADO').map((x) => ({ tipo: 'CAMBIO_PRESUPUESTO', id: x.id })),
     ];
     if (pendientes.length) throw new PendingItemsError('No se puede cerrar: hay cargas pendientes de resolver', { pendientes });

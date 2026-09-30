@@ -70,6 +70,38 @@ describe('FX-OT — orden de trabajo con RLS real', () => {
     expect(incident).toMatchObject({ politicaRetrabajo: 'CIF_POOL', estadoValidacion: 'PENDIENTE' });
     expect(await withTenant(B.userId, (tx) => tx.eventoContingencia.findMany({ where: { id: incident.id } }))).toEqual([]);
   });
+
+  it('FX-OT sólo suma la entrega validada y permite cerrar al validar o rechazar pendientes', async () => {
+    const orders = new OrdenTrabajoService();
+    const costs = new CostosDirectosService();
+    const reports = new InformeDesvioOrdenService();
+    const closures = new CierreOrdenService();
+    await withTenant(A.userId, (tx) => tx.company.update({ where: { id: A.companyId }, data: { industry: 'CONSTRUCCION_MODULAR' } }));
+
+    const createPending = async (suffix: string) => {
+      const order = await orders.create(A.userId, A.companyId, {
+        codigo: `OT-RES-${suffix}-${randomUUID().slice(0, 8)}`, descripcion: 'Obra X', cliente: 'Cliente ficticio', plantillaId: null, fechaInicio: null,
+      }, actor(A.userId));
+      const stage = (await orders.listStages(A.userId, order.id)).find((item) => item.esEntrega)!;
+      const direct = await costs.createCosto(A.userId, order.id, { etapaId: stage.id, categoria: 'TRANSPORTE', importe: 180000, periodoImputado: '2026-09-01' }, actor(A.userId));
+      await withTenant(A.userId, (tx) => tx.ordenTrabajo.update({ where: { id: order.id }, data: { estado: 'PENDIENTE_CIERRE' } }));
+      await expect(closures.close(A.userId, order.id, actor(A.userId))).rejects.toMatchObject({ statusCode: 422 });
+      return { order, direct };
+    };
+
+    const approved = await createPending('VALIDAR');
+    expect((await reports.get(A.userId, approved.order.id)).costoReal).toBe(0);
+    await costs.validateCosto(A.userId, approved.direct.id, actor(A.userId));
+    expect((await reports.get(A.userId, approved.order.id)).costoReal).toBe(180000);
+    await closures.close(A.userId, approved.order.id, actor(A.userId));
+    expect((await orders.get(A.userId, approved.order.id)).estado).toBe('CERRADA');
+
+    const rejected = await createPending('RECHAZAR');
+    await costs.rejectCosto(A.userId, rejected.direct.id, 'Carga duplicada', actor(A.userId));
+    expect((await reports.get(A.userId, rejected.order.id)).costoReal).toBe(0);
+    await closures.close(A.userId, rejected.order.id, actor(A.userId));
+    expect((await orders.get(A.userId, rejected.order.id)).estado).toBe('CERRADA');
+  });
   it('aprueba 675.000 de MOD con prima causada y excluye entrega de la base del taller', async () => {
     const orders = new OrdenTrabajoService();
     const parts = new ParteHorasService();

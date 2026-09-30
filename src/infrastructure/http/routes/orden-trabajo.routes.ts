@@ -11,7 +11,7 @@ import { presupuestoCreateSchema, presupuestoEnvelopeSchema, presupuestosEnvelop
 import { ParteHorasService } from '../../../application/ordenes/parte-horas-service.js';
 import { parteHorasCreateSchema, parteHorasEnvelopeSchema, partesHorasEnvelopeSchema } from '../../../shared/schemas/parte-horas.schema.js';
 import { CostosDirectosService } from '../../../application/ordenes/costos-directos-service.js';
-import { contingenciaCreateSchema, contingenciaEnvelopeSchema, contingenciasEnvelopeSchema, costoDirectoCreateSchema, costoDirectoEnvelopeSchema, costosDirectosEnvelopeSchema } from '../../../shared/schemas/costos-directos.schema.js';
+import { contingenciaCreateSchema, contingenciaEnvelopeSchema, contingenciasEnvelopeSchema, costoDirectoCreateSchema, costoDirectoEnvelopeSchema, costosDirectosEnvelopeSchema, rechazoSchema } from '../../../shared/schemas/costos-directos.schema.js';
 import { InformeDesvioOrdenService } from '../../../application/ordenes/informe-desvio-orden-service.js';
 import { informeDesvioOrdenEnvelopeSchema } from '../../../shared/schemas/informe-desvio-orden.schema.js';
 import { CierreOrdenService } from '../../../application/ordenes/cierre-orden-service.js';
@@ -206,7 +206,7 @@ export async function registerOrdenTrabajoRoutes(app: FastifyInstance): Promise<
     preHandler: authenticate, schema: { response: { 200: costosDirectosEnvelopeSchema, ...apiErrorResponses } },
   }, async (request) => {
     const { id } = idParams.parse(request.params);
-    const tenantId = esOperador(request) ? await scopes.tenantForOrden(request.authUser!.id, id, 'ordenes.ver') : request.authUser!.id;
+    const tenantId = esOperador(request) ? await scopes.tenantForOrden(request.authUser!.id, id, 'ordenes.ver_margen') : request.authUser!.id;
     return costosDirectos.listCostos(tenantId, id);
   });
   contract.post('/ordenes-trabajo/:id/contingencias', {
@@ -220,7 +220,37 @@ export async function registerOrdenTrabajoRoutes(app: FastifyInstance): Promise<
     preHandler: authenticate, schema: { response: { 200: contingenciasEnvelopeSchema, ...apiErrorResponses } },
   }, async (request) => {
     const { id } = idParams.parse(request.params);
-    const tenantId = esOperador(request) ? await scopes.tenantForOrden(request.authUser!.id, id, 'ordenes.ver') : request.authUser!.id;
+    const tenantId = esOperador(request) ? await scopes.tenantForOrden(request.authUser!.id, id, 'ordenes.ver_margen') : request.authUser!.id;
     return costosDirectos.listContingencias(tenantId, id);
+  });
+  contract.post('/costos-directos/:id/validar', {
+    preHandler: authenticate, schema: { response: { 200: costoDirectoEnvelopeSchema, ...apiErrorResponses } },
+  }, async (request) => {
+    const { id } = idParams.parse(request.params);
+    const tenantId = esOperador(request) ? await scopes.tenantForCostoDirecto(request.authUser!.id, id, 'ordenes.cerrar') : request.authUser!.id;
+    return { data: await costosDirectos.validateCosto(tenantId, id, actorFrom(request)) };
+  });
+  contract.post('/costos-directos/:id/rechazar', {
+    preHandler: authenticate, schema: { body: rechazoSchema, response: { 200: costoDirectoEnvelopeSchema, ...apiErrorResponses } },
+  }, async (request) => {
+    const { id } = idParams.parse(request.params);
+    const { motivo } = rechazoSchema.parse(request.body);
+    const tenantId = esOperador(request) ? await scopes.tenantForCostoDirecto(request.authUser!.id, id, 'ordenes.cerrar') : request.authUser!.id;
+    return { data: await costosDirectos.rejectCosto(tenantId, id, motivo, actorFrom(request)) };
+  });
+  contract.post('/contingencias/:id/validar', {
+    preHandler: authenticate, schema: { response: { 200: contingenciaEnvelopeSchema, ...apiErrorResponses } },
+  }, async (request) => {
+    const { id } = idParams.parse(request.params);
+    const tenantId = esOperador(request) ? await scopes.tenantForContingencia(request.authUser!.id, id, 'ordenes.cerrar') : request.authUser!.id;
+    return { data: await costosDirectos.validateContingencia(tenantId, id, actorFrom(request)) };
+  });
+  contract.post('/contingencias/:id/rechazar', {
+    preHandler: authenticate, schema: { body: rechazoSchema, response: { 200: contingenciaEnvelopeSchema, ...apiErrorResponses } },
+  }, async (request) => {
+    const { id } = idParams.parse(request.params);
+    const { motivo } = rechazoSchema.parse(request.body);
+    const tenantId = esOperador(request) ? await scopes.tenantForContingencia(request.authUser!.id, id, 'ordenes.cerrar') : request.authUser!.id;
+    return { data: await costosDirectos.rejectContingencia(tenantId, id, motivo, actorFrom(request)) };
   });
 }
