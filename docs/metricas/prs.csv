@@ -198,3 +198,6 @@ pr,issue,autor,base,abierto,mergeado,horas,archivos,agregadas,borradas,corridas_
 505,481,AlanArevalo1,dev,2026-09-29T04:35:01Z,2026-09-29T04:38:40Z,0.1,8,995,1,8,0,,,docs/sesiones/2026-09-29-481-cartera-ordenes.md
 506,502,AlanArevalo1,dev,2026-09-29T05:34:31Z,2026-09-29T05:40:49Z,0.1,7,207,7,12,0,,,docs/sesiones/2026-09-29-502-articulo-unidad-legible.md
 518,510,AlanArevalo1,dev,2026-09-29T18:52:18Z,2026-09-29T18:56:05Z,0.1,13,4079,2,8,0,,,docs/sesiones/2026-09-29-510-unidades-medida-api.md
+519,501,AlanArevalo1,dev,2026-09-30T17:32:05Z,2026-09-30T17:37:01Z,0.1,9,996,7,8,0,,,docs/sesiones/2026-09-30-501-salidas-inventario-elegibles.md
+520,507,AlanArevalo1,dev,2026-09-30T18:31:44Z,2026-09-30T18:36:02Z,0.1,20,5929,16,5,0,,,docs/sesiones/2026-09-30-507-padron-personal-tarifas.md
+521,508,AlanArevalo1,dev,2026-09-30T19:02:33Z,2026-09-30T19:08:15Z,0.1,11,231,39,11,0,,,docs/sesiones/2026-09-30-508-tarifa-vigente-partes.md
