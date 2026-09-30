@@ -239,6 +239,15 @@ export class OperatorScopeService {
     return allowed.orden.userId;
   }
 
+  async tenantForOrdenAny(operatorId: string, ordenId: string, permissions: PermisoOperador[]): Promise<string> {
+    const allowed = await this.db.operatorOrdenTrabajo.findFirst({
+      where: { ordenId, membership: { operatorId, isActive: true, permisos: { hasSome: permissions } } },
+      select: { orden: { select: { userId: true } } },
+    });
+    if (!allowed) throw new ForbiddenError('No tenés autorización para acceder a esa orden de trabajo.');
+    return allowed.orden.userId;
+  }
+
   async tenantForPresupuesto(operatorId: string, presupuestoId: string, permission: PermisoOperador): Promise<string> {
     const allowed = await this.db.versionPresupuesto.findFirst({
       where: { id: presupuestoId, orden: { operadoresAutorizados: { some: { membership: { operatorId, isActive: true, permisos: { has: permission } } } } } },

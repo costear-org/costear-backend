@@ -79,12 +79,19 @@ describe('FX-OT — orden de trabajo con RLS real', () => {
     }, actor(A.userId));
     const stages = await orders.listStages(A.userId, order.id);
     const stage = stages.find((row) => !row.esEntrega)!;
-    const rate = await withTenant(A.userId, (tx) => tx.tarifaManoObra.create({ data: {
-      companyId: A.companyId, userId: A.userId, nombre: 'Taller', basicRemuneration: 650000,
+    const category = await withTenant(A.userId, (tx) => tx.categoriaPersonal.create({ data: {
+      companyId: A.companyId, userId: A.userId, nombre: `Taller ${randomUUID()}`,
+    } }));
+    const firstRate = await withTenant(A.userId, (tx) => tx.tarifaManoObra.create({ data: {
+      companyId: A.companyId, userId: A.userId, categoriaId: category.id, nombre: 'Taller inicial', basicRemuneration: 520000,
       hoursWorked: 130, itcsPct: 0, primaExtraPct: 50, vigenteDesde: new Date('2026-09-01T00:00:00Z'),
     } }));
+    const currentRate = await withTenant(A.userId, (tx) => tx.tarifaManoObra.create({ data: {
+      companyId: A.companyId, userId: A.userId, categoriaId: category.id, nombre: 'Taller vigente', basicRemuneration: 650000,
+      hoursWorked: 130, itcsPct: 0, primaExtraPct: 50, vigenteDesde: new Date('2026-09-15T00:00:00Z'),
+    } }));
     const person = await withTenant(A.userId, (tx) => tx.persona.create({ data: {
-      companyId: A.companyId, userId: A.userId, nombre: 'Operario ficticio', activa: true,
+      companyId: A.companyId, userId: A.userId, nombre: 'Operario ficticio', categoriaId: category.id, activa: true,
     } }));
     const additional = await withTenant(A.userId, (tx) => tx.versionPresupuesto.create({ data: {
       companyId: A.companyId, ordenId: order.id, userId: A.userId, tipo: 'ADICIONAL', numero: 1,
@@ -92,11 +99,16 @@ describe('FX-OT — orden de trabajo con RLS real', () => {
       costoPrevisto: 100000, precio: 150000, plazoDias: 0, causaAdicional: 'Cambio ficticio',
     } }));
     await withTenant(A.userId, (tx) => tx.company.update({ where: { id: A.companyId }, data: { politicaPrimaExtra: 'DIRECTA_CON_CAUSA' } }));
+    const early = await parts.create(A.userId, order.id, {
+      personaId: person.id, etapaId: stage.id, fecha: '2026-09-10', horasNormales: 1, horasExtra: 0,
+    }, actor(A.userId));
     const loaded = await parts.create(A.userId, order.id, {
       personaId: person.id, etapaId: stage.id, fecha: '2026-09-25', horasNormales: 120, horasExtra: 10,
-      tarifaId: rate.id, causaExtra: { texto: 'Cambio ficticio', versionPresupuestoId: additional.id },
+      causaExtra: { texto: 'Cambio ficticio', versionPresupuestoId: additional.id },
     }, actor(A.userId));
     const approved = await parts.approve(A.userId, loaded.id, actor(A.userId));
+    expect(early).toMatchObject({ tarifaId: firstRate.id, tarifaHora: 4000 });
+    expect(loaded).toMatchObject({ tarifaId: currentRate.id, tarifaHora: 5000 });
     expect(approved).toMatchObject({ importeMod: 675000, incluyeBaseHorasTaller: true, estado: 'APROBADO' });
     expect(await withTenant(B.userId, (tx) => tx.parteHoras.findMany({ where: { id: loaded.id } }))).toEqual([]);
   });

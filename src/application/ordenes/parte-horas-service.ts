@@ -10,6 +10,8 @@ import type { ParteHorasCreateInput } from '../../shared/schemas/parte-horas.sch
 class ExtraCauseNotApprovedError extends UnprocessableEntityError { override readonly code = 'EXTRA_CAUSE_NOT_APPROVED'; }
 class InvalidTimeSheetStateError extends ValidationError { override readonly code = 'INVALID_TIME_SHEET_STATE'; }
 class InactivePersonError extends UnprocessableEntityError { override readonly code = 'INACTIVE_PERSON'; }
+class PersonUnavailableError extends UnprocessableEntityError { override readonly code = 'PERSONA_NO_DISPONIBLE'; }
+class CurrentRateMissingError extends UnprocessableEntityError { override readonly code = 'TARIFA_VIGENTE_AUSENTE'; }
 
 const utcDate = (value: string) => new Date(`${value}T00:00:00.000Z`);
 const present = <T extends { horasNormales: unknown; horasExtra: unknown; tarifaHora: unknown; primaExtraHora: unknown; importeMod: unknown }>(row: T) => ({
@@ -27,15 +29,25 @@ export class ParteHorasService {
       where: { id: ordenId, userId }, include: { company: { select: { politicaPrimaExtra: true } } },
     }));
     if (!orden) throw new NotFoundError('Orden de trabajo no encontrada');
-    const [etapa, tarifa, persona] = await Promise.all([
+    const [etapa, persona] = await Promise.all([
       withTenant(userId, (tx) => tx.etapaOrden.findFirst({ where: { id: input.etapaId, ordenId, userId } })),
-      withTenant(userId, (tx) => tx.tarifaManoObra.findFirst({ where: { id: input.tarifaId, companyId: orden.companyId, userId } })),
-      withTenant(userId, (tx) => tx.persona.findFirst({ where: { id: input.personaId, companyId: orden.companyId, userId } })),
+      withTenant(userId, (tx) => tx.persona.findFirst({ where: { id: input.personaId, userId } })),
     ]);
     if (!etapa) throw new NotFoundError('Etapa de la orden no encontrada');
-    if (!tarifa) throw new NotFoundError('Tarifa de mano de obra no encontrada');
-    if (!persona) throw new NotFoundError('Persona no encontrada');
+    if (!persona || persona.companyId !== orden.companyId) {
+      throw new PersonUnavailableError('La persona no pertenece a la empresa de la orden', { field: 'personaId' });
+    }
     if (!persona.activa) throw new InactivePersonError('La persona está inactiva y no puede recibir partes nuevos', { field: 'personaId' });
+    const fecha = utcDate(input.fecha);
+    const tarifa = await withTenant(userId, (tx) => tx.tarifaManoObra.findFirst({
+      where: { companyId: orden.companyId, userId, categoriaId: persona.categoriaId, vigenteDesde: { lte: fecha } },
+      orderBy: { vigenteDesde: 'desc' },
+    }));
+    if (!tarifa) {
+      throw new CurrentRateMissingError('No hay una tarifa vigente para la persona en la fecha del parte', {
+        personaId: input.personaId, fecha: input.fecha,
+      });
+    }
 
     const directa = orden.company.politicaPrimaExtra === 'DIRECTA_CON_CAUSA';
     if (directa && input.horasExtra > 0) {
@@ -58,8 +70,8 @@ export class ParteHorasService {
 
     return withTenant(userId, async (tx) => {
       const creado = await tx.parteHoras.create({ data: {
-        ordenId, etapaId: input.etapaId, userId, personaId: input.personaId, fecha: utcDate(input.fecha),
-        horasNormales: input.horasNormales, horasExtra: input.horasExtra, tarifaId: input.tarifaId,
+        ordenId, etapaId: input.etapaId, userId, personaId: input.personaId, fecha,
+        horasNormales: input.horasNormales, horasExtra: input.horasExtra, tarifaId: tarifa.id,
         tarifaHora, primaExtraHora, causaExtra: input.causaExtra?.texto ?? null,
         versionPresupuestoId: input.causaExtra?.versionPresupuestoId ?? null,
         incluyeBaseHorasTaller: !etapa.esEntrega,

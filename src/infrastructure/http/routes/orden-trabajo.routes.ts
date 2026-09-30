@@ -28,8 +28,8 @@ const esOperador = (request: FastifyRequest) => request.authUser!.role === 'EMPR
 const sinMargen = <T extends Record<string, unknown>>(value: T): T => Object.fromEntries(
   Object.entries(value).filter(([key]) => key !== 'precio' && key !== 'precioContractual' && !key.startsWith('margen')),
 ) as T;
-const sinTarifa = <T extends { tarifaHora?: unknown; primaExtraHora?: unknown; importeMod?: unknown }>(value: T): Omit<T, 'tarifaHora' | 'primaExtraHora' | 'importeMod'> => {
-  const { tarifaHora: _tarifa, primaExtraHora: _prima, importeMod: _importe, ...visible } = value;
+const sinTarifa = <T extends { tarifaId?: unknown; tarifaHora?: unknown; primaExtraHora?: unknown; importeMod?: unknown }>(value: T): Omit<T, 'tarifaId' | 'tarifaHora' | 'primaExtraHora' | 'importeMod'> => {
+  const { tarifaId: _tarifaId, tarifaHora: _tarifa, primaExtraHora: _prima, importeMod: _importe, ...visible } = value;
   return visible;
 };
 const sinMargenesCartera = <T extends { margenPresupuestadoPct?: unknown; margenProyectadoPct?: unknown; desvioPp?: unknown }>(value: T) => {
@@ -89,7 +89,9 @@ export async function registerOrdenTrabajoRoutes(app: FastifyInstance): Promise<
   });
   contract.get('/ordenes-trabajo/:id/etapas', { preHandler: authenticate, schema: { response: { 200: etapasOrdenEnvelopeSchema, ...apiErrorResponses } } }, async (request) => {
     const { id } = idParams.parse(request.params);
-    const tenantId = esOperador(request) ? await scopes.tenantForOrden(request.authUser!.id, id, 'ordenes.ver') : request.authUser!.id;
+    const tenantId = esOperador(request)
+      ? await scopes.tenantForOrdenAny(request.authUser!.id, id, ['ordenes.ver', 'horas.cargar', 'horas.aprobar'])
+      : request.authUser!.id;
     return { data: await service.listStages(tenantId, id) };
   });
   contract.get('/ordenes-trabajo/:id/informe-desvio', {
@@ -180,7 +182,9 @@ export async function registerOrdenTrabajoRoutes(app: FastifyInstance): Promise<
     preHandler: authenticate, schema: { response: { 200: partesHorasEnvelopeSchema, ...apiErrorResponses } },
   }, async (request) => {
     const { id } = idParams.parse(request.params);
-    const tenantId = esOperador(request) ? await scopes.tenantForOrden(request.authUser!.id, id, 'ordenes.ver') : request.authUser!.id;
+    const tenantId = esOperador(request)
+      ? await scopes.tenantForOrdenAny(request.authUser!.id, id, ['ordenes.ver', 'horas.cargar', 'horas.aprobar'])
+      : request.authUser!.id;
     const data = await partesHoras.list(tenantId, id);
     return { data: esOperador(request) ? data.map(sinTarifa) : data };
   });

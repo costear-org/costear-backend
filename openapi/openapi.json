@@ -40743,10 +40743,6 @@
                     "type": "number",
                     "minimum": 0
                   },
-                  "tarifaId": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
                   "causaExtra": {
                     "type": "object",
                     "properties": {
@@ -40772,8 +40768,7 @@
                   "etapaId",
                   "fecha",
                   "horasNormales",
-                  "horasExtra",
-                  "tarifaId"
+                  "horasExtra"
                 ],
                 "additionalProperties": false
               }
@@ -40847,7 +40842,6 @@
                         "fecha",
                         "horasNormales",
                         "horasExtra",
-                        "tarifaId",
                         "estado"
                       ],
                       "additionalProperties": true
@@ -41397,7 +41391,6 @@
                           "fecha",
                           "horasNormales",
                           "horasExtra",
-                          "tarifaId",
                           "estado"
                         ],
                         "additionalProperties": true
@@ -41948,7 +41941,6 @@
                         "fecha",
                         "horasNormales",
                         "horasExtra",
-                        "tarifaId",
                         "estado"
                       ],
                       "additionalProperties": true

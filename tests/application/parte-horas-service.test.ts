@@ -24,8 +24,8 @@ describe('ParteHorasService', () => {
     vi.clearAllMocks();
     db.ordenTrabajo.findFirst.mockResolvedValue({ id: ORDER, companyId: USER, userId: USER, company: { politicaPrimaExtra: 'DENTRO_DE_TARIFA' } });
     db.etapaOrden.findFirst.mockResolvedValue({ id: STAGE, ordenId: ORDER, esEntrega: false });
-    db.tarifaManoObra.findFirst.mockResolvedValue({ id: RATE, companyId: USER, basicRemuneration: '650000', hoursWorked: '130', productiveHours: null, standardHours: null, itcsPct: '0', primaExtraPct: '50' });
-    db.persona.findFirst.mockResolvedValue({ id: USER, companyId: USER, activa: true });
+    db.tarifaManoObra.findFirst.mockResolvedValue({ id: RATE, companyId: USER, categoriaId: null, nombre: 'Taller', basicRemuneration: '650000', hoursWorked: '130', productiveHours: null, standardHours: null, itcsPct: '0', primaExtraPct: '50' });
+    db.persona.findFirst.mockResolvedValue({ id: USER, companyId: USER, categoriaId: null, activa: true });
     db.parteHoras.create.mockImplementation(async ({ data }: { data: object }) => ({ id: PART, estado: 'CARGADO', ...data }));
   });
 
@@ -33,8 +33,33 @@ describe('ParteHorasService', () => {
     const { ParteHorasService } = await import('@/application/ordenes/parte-horas-service.js');
     db.persona.findFirst.mockResolvedValue({ id: USER, companyId: USER, activa: false });
     await expect(new ParteHorasService(db as never).create(USER, ORDER, {
-      personaId: USER, etapaId: STAGE, fecha: '2026-09-25', horasNormales: 8, horasExtra: 0, tarifaId: RATE,
+      personaId: USER, etapaId: STAGE, fecha: '2026-09-25', horasNormales: 8, horasExtra: 0,
     }, actor)).rejects.toMatchObject({ code: 'INACTIVE_PERSON', statusCode: 422 });
+    expect(db.parteHoras.create).not.toHaveBeenCalled();
+  });
+
+  it('rechaza sin fallback general una persona cuya categoría no tiene tarifa vigente', async () => {
+    const { ParteHorasService } = await import('@/application/ordenes/parte-horas-service.js');
+    db.persona.findFirst.mockResolvedValue({ id: USER, companyId: USER, categoriaId: STAGE, activa: true });
+    db.tarifaManoObra.findFirst.mockResolvedValue(null);
+    await expect(new ParteHorasService(db as never).create(USER, ORDER, {
+      personaId: USER, etapaId: STAGE, fecha: '2026-09-25', horasNormales: 8, horasExtra: 0,
+    }, actor)).rejects.toMatchObject({
+      code: 'TARIFA_VIGENTE_AUSENTE', statusCode: 422, details: { personaId: USER, fecha: '2026-09-25' },
+    });
+    expect(db.tarifaManoObra.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ categoriaId: STAGE, vigenteDesde: { lte: new Date('2026-09-25T00:00:00.000Z') } }),
+      orderBy: { vigenteDesde: 'desc' },
+    }));
+    expect(db.parteHoras.create).not.toHaveBeenCalled();
+  });
+
+  it('rechaza con 422 una persona de otra empresa', async () => {
+    const { ParteHorasService } = await import('@/application/ordenes/parte-horas-service.js');
+    db.persona.findFirst.mockResolvedValue({ id: USER, companyId: ORDER, categoriaId: null, activa: true });
+    await expect(new ParteHorasService(db as never).create(USER, ORDER, {
+      personaId: USER, etapaId: STAGE, fecha: '2026-09-25', horasNormales: 8, horasExtra: 0,
+    }, actor)).rejects.toMatchObject({ code: 'PERSONA_NO_DISPONIBLE', statusCode: 422 });
     expect(db.parteHoras.create).not.toHaveBeenCalled();
   });
 
@@ -44,7 +69,7 @@ describe('ParteHorasService', () => {
     db.versionPresupuesto.findFirst.mockResolvedValue(null);
     await expect(new ParteHorasService(db as never).create(USER, ORDER, {
       personaId: USER, etapaId: STAGE, fecha: '2026-09-25', horasNormales: 120, horasExtra: 10,
-      tarifaId: RATE, causaExtra: { texto: 'Adicional', versionPresupuestoId: EXTRA },
+      causaExtra: { texto: 'Adicional', versionPresupuestoId: EXTRA },
     }, actor)).rejects.toMatchObject({ code: 'EXTRA_CAUSE_NOT_APPROVED', statusCode: 422 });
     expect(db.parteHoras.create).not.toHaveBeenCalled();
   });
@@ -56,7 +81,7 @@ describe('ParteHorasService', () => {
     db.parteHoras.findFirst.mockResolvedValue({ id: PART, userId: USER, estado: 'CARGADO', horasNormales: '120', horasExtra: '10', tarifaHora: '5000', primaExtraHora: '2500' });
     db.parteHoras.update.mockResolvedValue({ id: PART, estado: 'APROBADO', importeMod: '675000' });
     const service = new ParteHorasService(db as never);
-    await service.create(USER, ORDER, { personaId: USER, etapaId: STAGE, fecha: '2026-09-25', horasNormales: 120, horasExtra: 10, tarifaId: RATE, causaExtra: { texto: 'Adicional', versionPresupuestoId: EXTRA } }, actor);
+    await service.create(USER, ORDER, { personaId: USER, etapaId: STAGE, fecha: '2026-09-25', horasNormales: 120, horasExtra: 10, causaExtra: { texto: 'Adicional', versionPresupuestoId: EXTRA } }, actor);
     const approved = await service.approve(USER, PART, actor);
     expect(db.parteHoras.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ importeMod: 675000 }) }));
     expect(approved.importeMod).toBe(675000);

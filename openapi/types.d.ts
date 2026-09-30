@@ -15167,7 +15167,7 @@ export interface paths {
                                 horasNormales: number;
                                 horasExtra: number;
                                 /** Format: uuid */
-                                tarifaId: string;
+                                tarifaId?: string;
                                 /** @enum {string} */
                                 estado: "CARGADO" | "APROBADO";
                             } & {
@@ -15359,8 +15359,6 @@ export interface paths {
                         fecha: string;
                         horasNormales: number;
                         horasExtra: number;
-                        /** Format: uuid */
-                        tarifaId: string;
                         causaExtra?: {
                             texto: string;
                             /** Format: uuid */
@@ -15391,7 +15389,7 @@ export interface paths {
                                 horasNormales: number;
                                 horasExtra: number;
                                 /** Format: uuid */
-                                tarifaId: string;
+                                tarifaId?: string;
                                 /** @enum {string} */
                                 estado: "CARGADO" | "APROBADO";
                             } & {
@@ -15609,7 +15607,7 @@ export interface paths {
                                 horasNormales: number;
                                 horasExtra: number;
                                 /** Format: uuid */
-                                tarifaId: string;
+                                tarifaId?: string;
                                 /** @enum {string} */
                                 estado: "CARGADO" | "APROBADO";
                             } & {

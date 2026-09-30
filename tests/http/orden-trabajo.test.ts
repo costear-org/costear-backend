@@ -134,6 +134,23 @@ describe('rutas de órdenes de trabajo', () => {
     expect(res.json().data).toEqual([expect.objectContaining({ nombre: 'Montaje', esEntrega: true })]);
   });
 
+  it('permite a horas.cargar listar etapas sin ordenes.ver y rechaza a quien no tiene permisos', async () => {
+    auth.role = 'EMPRESA_OPERATOR';
+    db.operatorOrdenTrabajo.findFirst
+      .mockResolvedValueOnce({ orden: { userId: USER } })
+      .mockResolvedValueOnce(null);
+    db.ordenTrabajo.findFirst.mockResolvedValue({ id: ORDER, userId: USER, estado: 'BORRADOR' });
+    db.etapaOrden.findMany.mockResolvedValue([{ id: COMPANY, clave: 'montaje', nombre: 'Montaje', orden: 1, esEntrega: true }]);
+    const api = await app();
+    const allowed = await api.inject({ method: 'GET', url: `/ordenes-trabajo/${ORDER}/etapas` });
+    const denied = await api.inject({ method: 'GET', url: `/ordenes-trabajo/${ORDER}/etapas` });
+    expect(allowed.statusCode).toBe(200);
+    expect(denied.statusCode).toBe(403);
+    expect(db.operatorOrdenTrabajo.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ membership: expect.objectContaining({ permisos: { hasSome: ['ordenes.ver', 'horas.cargar', 'horas.aprobar'] } }) }),
+    }));
+  });
+
   it('un usuario de planta ve la orden sin precio ni margen', async () => {
     auth.role = 'EMPRESA_OPERATOR';
     db.operatorOrdenTrabajo.findFirst.mockResolvedValue({ orden: { userId: USER } });
@@ -219,15 +236,61 @@ describe('rutas de órdenes de trabajo', () => {
     db.ordenTrabajo.findFirst.mockResolvedValue({ id: ORDER, companyId: COMPANY, userId: USER, company: { politicaPrimaExtra: 'DENTRO_DE_TARIFA' } });
     db.etapaOrden.findFirst.mockResolvedValue({ id: COMPANY, ordenId: ORDER, esEntrega: false });
     db.tarifaManoObra.findFirst.mockResolvedValue({ id: COMPANY, companyId: COMPANY, nombre: 'Taller', basicRemuneration: '650000', hoursWorked: '130', productiveHours: null, standardHours: null, itcsPct: '0', primaExtraPct: '50' });
-    db.persona.findFirst.mockResolvedValue({ id: USER, companyId: COMPANY, activa: true });
+    db.persona.findFirst.mockResolvedValue({ id: USER, companyId: COMPANY, categoriaId: null, activa: true });
     db.parteHoras.create.mockResolvedValue({ id: COMPANY, ordenId: ORDER, etapaId: COMPANY, personaId: USER, fecha: new Date('2026-09-25T00:00:00Z'), horasNormales: 8, horasExtra: 0, tarifaId: COMPANY, tarifaHora: 5000, primaExtraHora: 0, importeMod: null, estado: 'CARGADO' });
+    const api = await app();
+    const res = await api.inject({ method: 'POST', url: `/ordenes-trabajo/${ORDER}/partes-horas`, payload: {
+      personaId: USER, etapaId: COMPANY, fecha: '2026-09-25', horasNormales: 8, horasExtra: 0,
+    } });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().data).not.toHaveProperty('tarifaHora');
+    expect(res.json().data).not.toHaveProperty('tarifaId');
+    expect(res.json().data).not.toHaveProperty('importeMod');
+  });
+
+  it('rechaza tarifaId en el body con 400 y no crea el parte', async () => {
     const api = await app();
     const res = await api.inject({ method: 'POST', url: `/ordenes-trabajo/${ORDER}/partes-horas`, payload: {
       personaId: USER, etapaId: COMPANY, fecha: '2026-09-25', horasNormales: 8, horasExtra: 0, tarifaId: COMPANY,
     } });
-    expect(res.statusCode).toBe(201);
-    expect(res.json().data).not.toHaveProperty('tarifaHora');
-    expect(res.json().data).not.toHaveProperty('importeMod');
+    expect(res.statusCode).toBe(400);
+    expect(db.parteHoras.create).not.toHaveBeenCalled();
+  });
+
+  it('devuelve 422 tipado cuando la persona no tiene tarifa vigente', async () => {
+    db.ordenTrabajo.findFirst.mockResolvedValue({ id: ORDER, companyId: COMPANY, userId: USER, company: { politicaPrimaExtra: 'DENTRO_DE_TARIFA' } });
+    db.etapaOrden.findFirst.mockResolvedValue({ id: COMPANY, ordenId: ORDER, esEntrega: false });
+    db.persona.findFirst.mockResolvedValue({ id: USER, companyId: COMPANY, categoriaId: ORDER, activa: true });
+    db.tarifaManoObra.findFirst.mockResolvedValue(null);
+    const api = await app();
+    const res = await api.inject({ method: 'POST', url: `/ordenes-trabajo/${ORDER}/partes-horas`, payload: {
+      personaId: USER, etapaId: COMPANY, fecha: '2026-09-25', horasNormales: 8, horasExtra: 0,
+    } });
+    expect(res.statusCode).toBe(422);
+    expect(res.json().error).toMatchObject({
+      code: 'TARIFA_VIGENTE_AUSENTE', details: { personaId: USER, fecha: '2026-09-25' },
+    });
+    expect(db.parteHoras.create).not.toHaveBeenCalled();
+  });
+
+  it('permite a horas.aprobar listar partes sin exponer tarifa ni importe', async () => {
+    auth.role = 'EMPRESA_OPERATOR';
+    db.operatorOrdenTrabajo.findFirst.mockResolvedValue({ orden: { userId: USER } });
+    db.ordenTrabajo.findFirst.mockResolvedValue({ id: ORDER, userId: USER });
+    db.parteHoras.findMany.mockResolvedValue([{
+      id: COMPANY, ordenId: ORDER, etapaId: COMPANY, personaId: USER,
+      fecha: new Date('2026-09-25T00:00:00Z'), horasNormales: 8, horasExtra: 0,
+      tarifaId: COMPANY, tarifaHora: 5000, primaExtraHora: 0, importeMod: null, estado: 'CARGADO',
+    }]);
+    const api = await app();
+    const res = await api.inject({ method: 'GET', url: `/ordenes-trabajo/${ORDER}/partes-horas` });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().data[0]).not.toHaveProperty('tarifaId');
+    expect(res.json().data[0]).not.toHaveProperty('tarifaHora');
+    expect(res.json().data[0]).not.toHaveProperty('importeMod');
+    expect(db.operatorOrdenTrabajo.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ membership: expect.objectContaining({ permisos: { hasSome: ['ordenes.ver', 'horas.cargar', 'horas.aprobar'] } }) }),
+    }));
   });
 
   it('rechaza una falla de proveedor sin recupero ni reclamo', async () => {
