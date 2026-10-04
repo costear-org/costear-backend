@@ -3,7 +3,7 @@
 # POR QUE UN WORKFLOW PROPIO Y NO EL AUTO-MERGE NATIVO DE GITHUB
 #
 # El nativo solo actua cuando algo bloquea el PR: checks requeridos por la
-# proteccion de rama. CosteAR-admin es privado y en plan free no admite
+# proteccion de rama. costear-admin es privado y en plan free no admite
 # proteccion, asi que ahi el nativo no gatea nada — mergearia al instante, con
 # el CI en rojo o sin haber corrido. Este workflow verifica los checks el mismo,
 # y por eso se comporta igual en los tres repos.
@@ -34,7 +34,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, ready_for_review]
   # Vercel publica por la Status API, no por la Checks API, y este workflow
-  # escuchaba una sola de las dos. Ver el detalle en CosteAR-frontend, donde se
+  # escuchaba una sola de las dos. Ver el detalle en costear-web, donde se
   # midio: un PR verde y etiquetado quedaba esperando al cron, que declara 15
   # minutos y en la practica corre cada 2 a 4 horas y media.
   status:
@@ -233,7 +233,7 @@ jobs:
               # Con la etiqueta, el estado del embudo es una consulta, y la misma
               # en los cuatro repos:
               #
-              #   gh pr list --repo Coste-AR/<repo> --label necesita-mano
+              #   gh pr list --repo costear-org/<repo> --label necesita-mano
               #
               # Se pone y se saca sola. No reemplaza al comentario, que explica
               # el caso concreto; la etiqueta es para verlo desde afuera sin

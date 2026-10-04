@@ -51,7 +51,7 @@ Los otros tres errores que rompen el aislamiento, en orden de probabilidad:
    variable cambie sola. La configuración va afuera; el código es el mismo en los dos lados.
 
 Y cuando haya clientes: **sembrar pre-producción con datos realistas, nunca con datos reales de
-producción** — conecta con el issue #18 de `CosteAR-admin`.
+producción** — conecta con el issue #18 de `costear-admin`.
 
 *Fuentes: [Railway — Isolate Staging from Production](https://docs.railway.com/guides/isolate-staging-production),
 [Railway — Environments](https://docs.railway.com/environments).*

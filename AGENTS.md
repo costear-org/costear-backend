@@ -1,6 +1,6 @@
 # AGENTS.md — cómo se trabaja en este repo
 
-Esto es `Coste-AR/CosteAR-backend`: la API, el motor de cálculo y los workers de CosteAR.
+Esto es `costear-org/costear-backend`: la API, el motor de cálculo y los workers de CosteAR.
 
 **Leelo entero antes de tocar nada.** Es el contrato de trabajo del repo, y está acá porque un
 agente arranca frío: si no está escrito, lo inventa.
@@ -19,8 +19,8 @@ npm run briefing
 ```
 
 Antes de leer el issue, leé también la
-[`CONSTITUCION.md`](https://github.com/Coste-AR/CosteAR-os/blob/dev/CONSTITUCION.md) de
-`Coste-AR/CosteAR-os`: es una página con diez principios que ningún issue puede contradecir. Si
+[`CONSTITUCION.md`](https://github.com/costear-org/costear-os/blob/dev/CONSTITUCION.md) de
+`costear-org/costear-os`: es una página con diez principios que ningún issue puede contradecir. Si
 el pedido choca con uno, el issue está mal: decilo ahí y no lo hagas. Cuando tomes una decisión
 sobre la marcha, citá en la bitácora el principio aplicado como `Constitución §N`.
 
@@ -79,7 +79,7 @@ git y de `gh` en el momento.
    **Esperar no ayuda a nadie.** Un PR que se queda abierto se desactualiza contra `dev` y empieza
    a generar conflictos con el trabajo de los demás. Si está listo, decilo.
 
-   El reparto completo de quién hace qué está en `CosteAR-os/ORQUESTACION.md`. **Ante cualquier
+   El reparto completo de quién hace qué está en `costear-os/ORQUESTACION.md`. **Ante cualquier
    contradicción entre este archivo y ese, manda ese.**
 
 ## Con qué se verifica
@@ -164,7 +164,7 @@ a mano al final es una promesa que se incumple sola.
   hayas acertado**. No es una queja: es con lo que mejoramos cómo pedimos el trabajo.
 - **Qué quedó afuera.**
 
-Formato completo: `CosteAR-os/software/templates/bitacora-sesion-agente.md`.
+Formato completo: `costear-os/software/templates/bitacora-sesion-agente.md`.
 
 ## Antes de decir que algo ya está resuelto
 
@@ -210,7 +210,7 @@ corriste. Si encontraste un bug que no era tuyo, decilo con el número del issue
 
 ---
 
-El protocolo completo del equipo está en [`Coste-AR/CosteAR-os`](https://github.com/Coste-AR/CosteAR-os).
+El protocolo completo del equipo está en [`costear-org/costear-os`](https://github.com/costear-org/costear-os).
 
 ---
 

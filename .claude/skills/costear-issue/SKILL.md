@@ -69,9 +69,9 @@ Los issues van al repo donde vive el código que hay que tocar. Traducción para
 
 | Lo que se ve | Repo | Cómo darse cuenta |
 | --- | --- | --- |
-| Un número mal calculado, algo que no se guardó, un error al importar, el mail que no llega, la API | `Coste-AR/CosteAR-backend` | El problema es con **los datos o las cuentas** |
-| Un botón que no anda, algo que se ve mal, una pantalla del producto, un flujo confuso | `Coste-AR/CosteAR-frontend` | El problema es con **lo que se ve y se toca** en la app del cliente |
-| El panel interno del equipo, la bitácora | `Coste-AR/CosteAR-admin` | Es una herramienta **nuestra**, no del cliente |
+| Un número mal calculado, algo que no se guardó, un error al importar, el mail que no llega, la API | `costear-org/costear-backend` | El problema es con **los datos o las cuentas** |
+| Un botón que no anda, algo que se ve mal, una pantalla del producto, un flujo confuso | `costear-org/costear-web` | El problema es con **lo que se ve y se toca** en la app del cliente |
+| El panel interno del equipo, la bitácora | `costear-org/costear-admin` | Es una herramienta **nuestra**, no del cliente |
 
 **Si no está claro, preguntá.** Y si de verdad es ambiguo (por ejemplo: "el total del dashboard
 está mal" — puede ser el cálculo o cómo se muestra), **va al backend** y se aclara en el issue
@@ -87,12 +87,12 @@ repo del grueso del trabajo y se menciona el otro adentro.
 Antes de crear nada:
 
 ```bash
-gh issue list --repo Coste-AR/<repo> --state all --search "<2 o 3 palabras clave>" --limit 10
+gh issue list --repo costear-org/<repo> --state all --search "<2 o 3 palabras clave>" --limit 10
 ```
 
 - Si ya existe y está **abierto**: no crear otro. Agregar la info nueva como comentario:
   ```bash
-  gh issue comment <N> --repo Coste-AR/<repo> --body "<lo nuevo que se supo>"
+  gh issue comment <N> --repo costear-org/<repo> --body "<lo nuevo que se supo>"
   ```
 - Si existe y está **cerrado** pero el problema volvió: crear uno nuevo que lo referencie
   (`Vuelve a pasar lo de #N`). No se reabre a ciegas — puede ser otra causa.
@@ -169,7 +169,7 @@ crea un dev.
 **Mostrá el borrador completo y esperá el OK antes de correr esto.**
 
 ```bash
-gh issue create --repo Coste-AR/<repo> \
+gh issue create --repo costear-org/<repo> \
   --title "<título>" \
   --label "type:bug,priority:alta,area:costeo" \
   --body "$(cat <<'BODY'
@@ -203,7 +203,7 @@ Al terminar, devolvé el link del issue creado y pegalo donde se venía hablando
   está: `gh auth login`. El issue queda a nombre de esa cuenta, y eso importa — así el dev sabe a
   quién volver a preguntarle.
 - **Los repos de backend y frontend son públicos.** Cualquiera en internet lee lo que escribas ahí.
-  `CosteAR-admin` es privado, pero la regla de no pegar datos del cliente vale igual.
+  `costear-admin` es privado, pero la regla de no pegar datos del cliente vale igual.
 - **No inventes números de issue ni de PR.** Si `gh` no te los devuelve, poné `—` y decilo.
 - **Si el issue nace de una reunión con el cliente, escribilo en el issue** ("sale de la reunión
   del 12/08 con el cliente"). Dentro de tres meses nadie se acuerda de dónde salió el pedido.

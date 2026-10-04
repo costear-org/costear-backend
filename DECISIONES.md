@@ -261,7 +261,7 @@ pérdida de datos (no hubo).
   el motor a leer de DataPoints, + envolver mutaciones legadas en
   `$transaction`) es de riesgo medio y toca DB: se hace con la base disponible.
 - **F4/F5 (navegación lista→detalle y pestaña nueva)** y **F6 (correcciones de
-  UI)** son de frontend; se abordan en el repo `CosteAR-frontend`. Los cinco
+  UI)** son de frontend; se abordan en el repo `costear-web`. Los cinco
   errores del 10/07 quedan confirmados con archivo:línea en la auditoría.
 
 ---

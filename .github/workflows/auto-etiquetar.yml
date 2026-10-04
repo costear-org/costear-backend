@@ -145,7 +145,7 @@
 #
 # COMO SE APAGA
 #
-#   gh variable set AUTO_ETIQUETAR_CODIGO --body "no" --repo Coste-AR/<repo>
+#   gh variable set AUTO_ETIQUETAR_CODIGO --body "no" --repo costear-org/<repo>
 #
 # Es una variable y no una edicion de este archivo a proposito: se apaga desde
 # el telefono, sin abrir un PR ni esperar un CI. Es justo lo que hace falta el
@@ -271,7 +271,7 @@ jobs:
             # EL SALTO DE LINEA NO ES COSMETICO. Sin el, `read` del otro lado
             # llega a EOF sin delimitador y devuelve 1 — y con `set -e` eso mata
             # el step sin imprimir una sola linea. Es exactamente como fallo el
-            # primer run real en CosteAR-os #30: exit code 1 y ningun mensaje.
+            # primer run real en costear-os #30: exit code 1 y ningun mensaje.
             echo "$casos $afirmaciones"
           }
 
@@ -289,7 +289,7 @@ jobs:
             fi
 
             if ! GH_TOKEN="$CIRCUITO_PAT" gh api --method POST \
-              repos/Coste-AR/CosteAR-admin/dispatches \
+              repos/costear-org/costear-admin/dispatches \
               -f event_type=g7-revisar \
               -f "client_payload[repo]=$REPO" \
               -F "client_payload[pr]=$pr" \
@@ -378,7 +378,7 @@ jobs:
             # La primera version resolvia la base con `git rev-parse "origin/$base"`
             # a secas. Con `set -e`, si esa ref no existe el step muere con exit 1
             # ANTES de imprimir una sola linea — que es como fallo el primer run
-            # real de este archivo en CosteAR-os: exit code 1 justo despues de
+            # real de este archivo en costear-os: exit code 1 justo despues de
             # abrir el grupo del PR, sin ningun mensaje que dijera por que.
             # `actions/checkout` sobre un PR hace checkout del merge ref y no
             # garantiza dejar la rama base como remote-tracking.
@@ -654,7 +654,7 @@ jobs:
             # estaba prendido, mirara lo que mirara. El efecto real fue que
             # NINGUNA BITACORA se auto-etiquetaba: un PR de puros `.md` no
             # cierra ningun issue —no tiene por que— y quedaba frenado por una
-            # guarda pensada para codigo. Las bitacoras de CosteAR-os venia
+            # guarda pensada para codigo. Las bitacoras de costear-os venia
             # etiquetandolas Santiago a mano una por una, que es justo el
             # trabajo que este workflow existe para sacarle; y la del 03-09
             # (os #29) quedo abierta cuatro dias porque no llego.
@@ -691,7 +691,7 @@ jobs:
             verif="Verificacion: $casos_base -> $casos_head casos, $afirm_base -> $afirm_head afirmaciones."
             if [ "$normativo_tocado" = "si" ]; then
               echo "APTO: normativo con su cambio declarado."
-              cuerpo=$(printf 'Etiquetado `auto-merge` automaticamente — **documento normativo con su cambio declarado**.\n\n**@SantiagoBriz: esto cambia una regla del equipo.** No rompe produccion, pero cambia lo que hace todo el mundo despues. Entro solo porque el PR declara su propio cambio en la tabla del documento, que es lo que hace que la regla no cambie en silencio. Si la fila no dice lo que el PR hizo, revertilo en `dev`.\n\n%s\n\nVer `.github/workflows/auto-etiquetar.yml`.\n' "$verif")
+              cuerpo=$(printf 'Etiquetado `auto-merge` automaticamente — **documento normativo con su cambio declarado**.\n\n**@costearsantiagobrizuela-cto: esto cambia una regla del equipo.** No rompe produccion, pero cambia lo que hace todo el mundo despues. Entro solo porque el PR declara su propio cambio en la tabla del documento, que es lo que hace que la regla no cambie en silencio. Si la fila no dice lo que el PR hizo, revertilo en `dev`.\n\n%s\n\nVer `.github/workflows/auto-etiquetar.yml`.\n' "$verif")
             elif [ "$codigo" = "si" ]; then
               echo "APTO (modo tanda)."
               cuerpo=$(printf 'Etiquetado `auto-merge` automaticamente — **modo tanda**.\n\n**Por que sin revision humana:** el equipo esta trabajando en volumen y sin disponibilidad para mirar cada PR. Este va contra `dev`, que es una rama de integracion: `staging` solo entra sola cuando la promocion no trae trabajo nuevo y `main` no entra sola nunca, asi que el radio de un merge malo es una rama interna y no el cliente.\n\n**Que se verifico:** el CI corrio entero sobre el codigo ya integrado, el PR cierra un issue —o sea que hay un alcance declarado contra el cual mirarlo despues— y **no baja el balance de verificacion**. %s\n\n**Que NO se verifico:** que el codigo haga lo que el issue pedia. Eso lo mira una persona cuando vuelva, antes de promover. Si algo de este PR no cierra, se revierte en `dev` sin tocar produccion.\n\nSe apaga con `gh variable set AUTO_ETIQUETAR_CODIGO --body "no"`. Ver `.github/workflows/auto-etiquetar.yml`.\n' "$verif")
