@@ -1,7 +1,7 @@
 ---
 name: costear-bitacora
 description: >
-  Registra la sesión de trabajo en la bitácora central de CosteAR (repo CosteAR-admin):
+  Registra la sesión de trabajo en la bitácora central de CosteAR (repo costear-admin):
   lee el git log y los PRs reales, redacta la entrada en castellano para el equipo no técnico,
   la guarda en bitacora/sesiones/ y actualiza el índice.
   Trigger: "bitacora", "bitácora", "registrar la sesión", "documentar lo que hicimos",
@@ -11,7 +11,7 @@ description: >
 # CosteAR — Bitácora de desarrollo
 
 Registra qué se hizo en esta sesión de trabajo, en la bitácora central que vive en el repo
-**`CosteAR-admin`**. Funciona desde cualquiera de los repos de código.
+**`costear-admin`**. Funciona desde cualquiera de los repos de código.
 
 Esta es la memoria del equipo frente al cliente: dentro de seis meses tiene que poder
 responderse *qué se cambió, cuándo y por qué* sin depender de la memoria de nadie.
@@ -184,7 +184,7 @@ git commit -m "docs(bitacora): registrar sesión del AAAA-MM-DD en <repo>"
 - **El repo de admin puede estar en otra rama o con cambios sin commitear.** Verificá
   `git -C "<admin>" status --porcelain` antes de escribir; si hay trabajo a medias de otra cosa,
   avisá en vez de mezclarlo en el mismo commit.
-- **`CosteAR-admin` es privado y no tiene protección de ramas forzada** (plan Free de GitHub).
+- **`costear-admin` es privado y no tiene protección de ramas forzada** (plan Free de GitHub).
   Eso no habilita a pushear directo a `main`: sigue siendo por PR, por acuerdo del equipo.
 - **No inventes números de PR ni de issue.** Si `gh` no los devuelve, poné `—` y decilo.
 - Si la sesión no produjo ningún commit, **no escribas una entrada vacía**: decile al usuario

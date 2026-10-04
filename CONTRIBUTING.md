@@ -18,10 +18,10 @@ que toma el cliente con nuestros datos.
 
 | Repo | Qué es |
 | --- | --- |
-| [`CosteAR-backend`](https://github.com/Coste-AR/CosteAR-backend) | Esta API |
-| [`CosteAR-frontend`](https://github.com/Coste-AR/CosteAR-frontend) | SPA del producto |
-| [`CosteAR-admin`](https://github.com/Coste-AR/CosteAR-admin) | Panel interno + **bitácora del desarrollo** |
-| [`costear-knowledge-base`](https://github.com/Coste-AR/costear-knowledge-base) | Bóveda que alimenta el RAG |
+| [`costear-backend`](https://github.com/costear-org/costear-backend) | Esta API |
+| [`costear-web`](https://github.com/costear-org/costear-web) | SPA del producto |
+| [`costear-admin`](https://github.com/costear-org/costear-admin) | Panel interno + **bitácora del desarrollo** |
+| [`costear-vault`](https://github.com/costear-org/costear-vault) | Bóveda que alimenta el RAG |
 
 ---
 
@@ -30,8 +30,8 @@ que toma el cliente con nuestros datos.
 **Prerequisitos:** Node 22 · npm · Docker (para Postgres).
 
 ```bash
-git clone https://github.com/Coste-AR/CosteAR-backend.git
-cd CosteAR-backend
+git clone https://github.com/costear-org/costear-backend.git
+cd costear-backend
 
 npm install              # instala dependencias y los git hooks (husky)
 cp .env.example .env     # completar con las credenciales locales
@@ -155,7 +155,7 @@ feature → dev → staging → main
 ### 7. Bitácora
 
 Al cerrar la sesión: **`/costear-bitacora`**. Registra qué se hizo en
-`CosteAR-admin/bitacora/`, en castellano y para todo el equipo.
+`costear-admin/bitacora/`, en castellano y para todo el equipo.
 
 ---
 

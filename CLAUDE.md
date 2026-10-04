@@ -28,7 +28,7 @@ Si solo leés una sección, que sea esta.
 alternativas descartadas → recién ahí implementar, y verificar donde el trabajo va a vivir, no
 donde uno está parado. Se movió el 22-08-2026 para no cargarla en cada sesión sin importar la tarea. La versión
 completa —con el caso que la probó y el detalle de cada trampa— vive en
-[`CosteAR-admin/docs/2026-08-22-filosofia-diagnosticar-planificar-implementar.md`](https://github.com/Coste-AR/CosteAR-admin/blob/dev/docs/2026-08-22-filosofia-diagnosticar-planificar-implementar.md)
+[`costear-admin/docs/2026-08-22-filosofia-diagnosticar-planificar-implementar.md`](https://github.com/costear-org/costear-admin/blob/dev/docs/2026-08-22-filosofia-diagnosticar-planificar-implementar.md)
 (fuente canónica: el Second Brain de Santiago, fuera de los repos de código).
 
 ---
@@ -43,10 +43,10 @@ motor de costeo es sagrada — ver §5.
 
 | Repo | Qué es | Visibilidad |
 |---|---|---|
-| `Coste-AR/CosteAR-backend` | Esta API | pública |
-| `Coste-AR/CosteAR-frontend` | SPA del producto | pública |
-| `Coste-AR/CosteAR-admin` | Panel interno + **bitácora del desarrollo** | privada |
-| `Coste-AR/costear-knowledge-base` | Bóveda que alimenta el RAG | privada |
+| `costear-org/costear-backend` | Esta API | pública |
+| `costear-org/costear-web` | SPA del producto | pública |
+| `costear-org/costear-admin` | Panel interno + **bitácora del desarrollo** | privada |
+| `costear-org/costear-vault` | Bóveda que alimenta el RAG | privada |
 
 ---
 
@@ -118,7 +118,7 @@ Se abren con `/costear-pr`. La plantilla de `.github/pull_request_template.md` s
 |**PR-02**|Antes de pedir review: tests, lint y typecheck en verde localmente.|
 |**PR-03**|PR gigante = PR que no se revisa. Si no lo describís en 3 bullets, es más de un PR.|
 |**PR-04**|**Todo PR nace en DRAFT.** GitHub **impide mergear un borrador**: mientras el trabajo crece, nadie lo mergea por error. Se marca `gh pr ready` cuando está listo de verdad — y se dice **«terminé de pushear»**. Entre el 20 y el 22-08 se perdieron 4 PRs de trabajo por mergear PRs que todavía estaban creciendo; en un caso, 12 minutos antes del commit que faltaba.|
-|**PR-05**|**Ningún agente mergea — tampoco con `gh pr merge --auto`.** Desde el 30-08-2026 **nadie mergea a mano en ningún repo**: el PR se marca listo, alguien le pone la etiqueta `auto-merge` —la pone Santiago, y es el juicio humano que **reemplaza al review**— y entra solo cuando el CI está verde y la rama al día. Lo hace `.github/workflows/auto-merge.yml`, que **verifica los checks él mismo** — y por eso funciona igual en `CosteAR-admin`, que es privado y en plan Free no puede tener protección de rama. Ahí ese workflow es la única barrera que hay. **Una rama de trabajo entra a `dev` con SQUASH**: un PR = un commit, `dev` se lee como una lista de cambios y deshacerlo es un `git revert` de un commit. **Las PROMOCIONES (`dev→staging`, `staging→main`) van con MERGE COMMIT, nunca squash**: el squash crea una identidad nueva y git deja de reconocer la historia compartida — el PR #125 existió solo para resolver un conflicto fantasma causado por eso. Canónico: `CosteAR-os/ORQUESTACION.md`.|
+|**PR-05**|**Ningún agente mergea — tampoco con `gh pr merge --auto`.** Desde el 30-08-2026 **nadie mergea a mano en ningún repo**: el PR se marca listo, alguien le pone la etiqueta `auto-merge` —la pone Santiago, y es el juicio humano que **reemplaza al review**— y entra solo cuando el CI está verde y la rama al día. Lo hace `.github/workflows/auto-merge.yml`, que **verifica los checks él mismo** — y por eso funciona igual en `costear-admin`, que es privado y en plan Free no puede tener protección de rama. Ahí ese workflow es la única barrera que hay. **Una rama de trabajo entra a `dev` con SQUASH**: un PR = un commit, `dev` se lee como una lista de cambios y deshacerlo es un `git revert` de un commit. **Las PROMOCIONES (`dev→staging`, `staging→main`) van con MERGE COMMIT, nunca squash**: el squash crea una identidad nueva y git deja de reconocer la historia compartida — el PR #125 existió solo para resolver un conflicto fantasma causado por eso. Canónico: `costear-os/ORQUESTACION.md`.|
 |**PR-06**|**Después de mergear, verificar que el trabajo LLEGÓ** (`git log origin/dev`), no que el PR figura en verde. Un PR apilado mergeado contra su rama de abajo aparece como `MERGED` y el trabajo no llega. Pasó 3 veces entre el 20 y el 21-08.|
 |**PR-07**|**`main` es el único que publica.** `staging` → ambiente *staging* (**pre-producción**, acá se prueba); `main` → ambiente *production* (**producción**). Promover a `staging` es probar, promover a `main` es publicar. La verificación la hace el CI: el workflow *Smoke post-deploy* consulta `/health` del ambiente que le toca a la rama y **falla si no termina sirviendo el commit mergeado**. No se anota el SHA a mano ni se mira Railway: si el job está verde, el deploy llegó.|
 |**PR-08**|**Lo que cambió el 22-08 y por qué está en `docs/2026-08-22-cambios-de-flujo-y-ambientes.md`.** Leerlo antes de abrir el primer PR o tocar un ambiente: explica el flujo nuevo, el mapa de ambientes y las alternativas que ya se descartaron, para no rediscutirlas.|
@@ -154,7 +154,7 @@ nada: la rama, si `origin/dev` avanzó, los PRs abiertos, los issues asignados y
 |---|---|
 |**DOC-01**|**Toda decisión técnica no obvia va a un ADR**: `docs/adr/NNNN-slug.md`. Se crea con `/costear-adr` y se revisa en el mismo PR que la implementa.|
 |**DOC-02**|`DECISIONES.md` es **registro histórico** de la implementación de Trazabilidad Total v1. **No agregar nada nuevo ahí** — va a `docs/adr/`.|
-|**DOC-03**|Al cerrar una sesión de trabajo, correr `/costear-bitacora`: escribe la entrada en `CosteAR-admin/bitacora/` para que el equipo no técnico sepa qué pasó.|
+|**DOC-03**|Al cerrar una sesión de trabajo, correr `/costear-bitacora`: escribe la entrada en `costear-admin/bitacora/` para que el equipo no técnico sepa qué pasó.|
 |**DOC-04**|Los diseños largos previos a implementar siguen yendo a `docs/plans/YYYY-MM-DD-slug.md`, como ya se venía haciendo.|
 |**DOC-05**|**Runbook de deploy**: `docs/runbook-deploy.md`. Leerlo antes de promover cualquier rama a `staging` o `main`. Actualizarlo después de cada deploy real.|
 
@@ -170,8 +170,8 @@ motor de cálculo: los fixtures de "Piezas mecánicas de precisión" y los tres 
 
 Los tres niveles completos —por tarea, por tanda de trabajo (cada promoción a `staging`) y por
 entrega al cliente— viven en
-[`DEFINITION-OF-DONE.md`](https://github.com/Coste-AR/CosteAR-admin/blob/dev/DEFINITION-OF-DONE.md)
-(`CosteAR-admin`, privado). Es la **fuente única**: no se duplica acá, se referencia.
+[`DEFINITION-OF-DONE.md`](https://github.com/costear-org/costear-admin/blob/dev/DEFINITION-OF-DONE.md)
+(`costear-admin`, privado). Es la **fuente única**: no se duplica acá, se referencia.
 
 ---
 
@@ -187,12 +187,12 @@ que no toca el motor de costeo.
 
 ## 5.bis Datos de clientes en repositorios públicos
 
-`CosteAR-backend` y `CosteAR-frontend` son **públicos**. `CosteAR-admin` es privado.
+`costear-backend` y `costear-web` son **públicos**. `costear-admin` es privado.
 
 |ID|Regla|
 |---|---|
 |**CLI-01**|**Los datos de un cliente no entran a un repositorio público.** Ni su nombre, ni su localidad, ni sus números reales — no en tests, no en seeds, no en comentarios, no en ejemplos, no en cuerpos de PR ni en mensajes de commit.|
-|**CLI-02**|Un fixture que necesita números realistas usa **datos ficticios** que ejerciten la misma matemática. El caso real, si hace falta conservarlo, va a `CosteAR-admin` (privado).|
+|**CLI-02**|Un fixture que necesita números realistas usa **datos ficticios** que ejerciten la misma matemática. El caso real, si hace falta conservarlo, va a `costear-admin` (privado).|
 |**CLI-03**|Antes de abrir un PR que toque un vertical de un cliente: `git grep -in "<nombre del cliente>"`. Si devuelve algo, no se abre.|
 |**CLI-04**|Esto incluye la estructura económica: costo unitario, punto de equilibrio, precio de venta, márgenes y escala. **Que un competidor pueda leer el margen de un productor es un problema para él, no para nosotros.**|
 
@@ -245,7 +245,7 @@ que no toca el motor de costeo.
 
 ### Sobre el conocimiento
 
-**El conocimiento no se va con quien lo escribió: se queda escrito.** Los ADR, la bitácora de `CosteAR-admin`, los tests con nombres en castellano y las reglas de este archivo existen exactamente para eso: para que no dependan de una persona ni de su memoria.
+**El conocimiento no se va con quien lo escribió: se queda escrito.** Los ADR, la bitácora de `costear-admin`, los tests con nombres en castellano y las reglas de este archivo existen exactamente para eso: para que no dependan de una persona ni de su memoria.
 
 Pero escribirlo no alcanza.
 
@@ -259,7 +259,7 @@ Por eso `/costear-bitacora` al cerrar una sesión (DOC-03) y el ADR en el mismo 
 |---|---|---|
 |2026-08-30|**REV-07 queda SUPERADA y entra REV-09.** La espera de 24 horas antes de mergear se escribió cuando la única verificación era `npm test`; hoy la reemplazan el CI obligatorio en las tres ramas, los E2E, `strict` y el merge automático. Y con varios agentes en paralelo el costo se dio vuelta: una cola de PRs esperando se desactualiza sola y **genera** los conflictos que la espera evitaba. Se marca en vez de borrarse, según la convención de este archivo.|Santiago|
 |2026-08-24|**CMD-05 — Fase 3: se cerró la deriva del schema (issue #72).** De las 10 sentencias destructivas que el script filtraba, **7 no eran un límite de Prisma sino schema desactualizado**: la base tenía DEFAULTs (`gen_random_uuid()`, `CURRENT_TIMESTAMP`), un índice y una FK que el schema no declaraba. Se cerraron declarándolos — solo `schema.prisma`, cero migración, cero cambio en la base. Las 3 de `vault_chunks` sí son estructurales y se siguen filtrando. Las 7 cerradas **ya no se filtran: si reaparecen, `npm run prisma:migrate` aborta**, porque filtrarlas en silencio es lo que las mantuvo vivas dos meses.|Santiago|
-|2026-08-22|**0.bis sale de acá.** La filosofía (diagnosticar/planificar/implementar) cargaba en TODAS las sesiones sin importar la tarea. El resumen operativo queda inline; la versión completa vive en `CosteAR-admin/docs/2026-08-22-filosofia-diagnosticar-planificar-implementar.md` (espejo del Second Brain de Santiago, que es la fuente canónica). Se evaluó y descartó ponerla en `costear-knowledge-base`: ese repo alimenta el RAG del clasificador y mete cualquier `.md` al índice — se habría mezclado con la doctrina de costeo.|Santiago|
+|2026-08-22|**0.bis sale de acá.** La filosofía (diagnosticar/planificar/implementar) cargaba en TODAS las sesiones sin importar la tarea. El resumen operativo queda inline; la versión completa vive en `costear-admin/docs/2026-08-22-filosofia-diagnosticar-planificar-implementar.md` (espejo del Second Brain de Santiago, que es la fuente canónica). Se evaluó y descartó ponerla en `costear-vault`: ese repo alimenta el RAG del clasificador y mete cualquier `.md` al índice — se habría mezclado con la doctrina de costeo.|Santiago|
 |2026-08-22|**Pieza 1 — DOM-01..07 se mudan a `.claude/rules/dominio-costeo.md`**, scoped a `prisma/**`, `src/domain/**` y `src/application/**`. Antes cargaban en TODAS las sesiones (297 líneas del archivo raíz, siempre en contexto); ahora cargan solo cuando el trabajo toca el motor de costeo o el schema, que es cuando importan. La filosofía (0.bis) y los datos de clientes (5.bis) NO se movieron: su riesgo no está atado a una carpeta — un commit o un PR body no son "un archivo que matchea un glob".|Santiago|
 |2026-08-22|**Sección 3.bis — briefing automático de sesión** (`SessionStart` + `ESTADO.md`). El contexto deja de depender de que alguien se acuerde de leer un documento: cada sesión arranca sabiendo qué pasó, qué no tocar y por qué. Es el mismo criterio que la Fase 1 aplicó al flujo de PRs, aplicado a la documentación.|Santiago|
 |2026-08-22|**PR-05 corregida y PR-09**: la regla decía "squash" a secas y era imprecisa. Las ramas de trabajo van squash; **las promociones van merge commit**, porque el squash rompe la identidad compartida entre ramas y hace conflictuar la promoción siguiente (fue la causa del PR #125). Se agrega `docs/manual-de-flujo-de-trabajo.md`, que explica el flujo entero para quien nunca usó draft ni auto-merge.|Santiago|

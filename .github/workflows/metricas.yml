@@ -187,7 +187,7 @@ jobs:
           # Se probaron las otras dos formas y las dos chocaron con un limite
           # real, no con un bug:
           #
-          #   1. Push directo a `dev`. Funciono en `CosteAR-admin` y fallo en
+          #   1. Push directo a `dev`. Funciono en `costear-admin` y fallo en
           #      los otros dos: `dev` tiene proteccion de rama y la proteccion
           #      rechaza el push aunque el token tenga `contents: write`. Los
           #      tres reintentos no servian: estaban escritos para una carrera

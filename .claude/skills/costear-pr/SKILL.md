@@ -47,7 +47,7 @@ equipo y no se automatizan acá.
 7. **Si tocó pantalla (frontend o admin):** `npm run test:e2e`, y la captura queda **adjunta al
    PR**. No se le pregunta a nadie si lo probó en el navegador: ese criterio **salió de la
    Definition of Done el 30-08-2026** y lo reemplazó la suite E2E con evidencia adjunta. El
-   canónico es `DEFINITION-OF-DONE.md` (vive en `CosteAR-admin`; los otros dos repos enlazan ahí).
+   canónico es `DEFINITION-OF-DONE.md` (vive en `costear-admin`; los otros dos repos enlazan ahí).
 
 Si algo falla → **se arregla primero**. Pedir review con el CI en rojo le hace perder el tiempo
 a otro.
@@ -151,10 +151,10 @@ verde** y **la etiqueta `auto-merge`**. La etiqueta la pone Santiago: es el juic
 **reemplaza al review**, porque no hay reviews requeridos en estos repos.
 
 > ⚠️ Este skill decía antes `gh pr merge --auto --squash`. Quedó obsoleto el 30-08-2026: el
-> auto-merge nativo de GitHub sólo actúa donde hay protección de rama, y `CosteAR-admin` no la
+> auto-merge nativo de GitHub sólo actúa donde hay protección de rama, y `costear-admin` no la
 > tiene. Por eso el workflow verifica los checks él mismo, igual en los tres repos.
 
-**El canónico de quién hace qué es `CosteAR-os/ORQUESTACION.md`.** Si este archivo lo contradice,
+**El canónico de quién hace qué es `costear-os/ORQUESTACION.md`.** Si este archivo lo contradice,
 manda ese y este está viejo.
 
 ### Cuándo marcar `ready`
@@ -212,7 +212,7 @@ Y correr **`/costear-bitacora`** para registrar la sesión.
 - **El review NO bloquea el merge** (decisión del equipo del 15-08-2026: con 4 personas, exigir
   aprobación trababa el trabajo). Desde el 30-08-2026 lo que ocupa su lugar es **la etiqueta
   `auto-merge`**: sin ella no entra nada, y la pone una persona. **Esa etiqueta es el review.**
-- **`CosteAR-admin` es privado y no tiene protección forzada** (limitación del plan Free de
+- **`costear-admin` es privado y no tiene protección forzada** (limitación del plan Free de
   GitHub). Las reglas valen igual, por acuerdo.
 - El CI del backend tiene **dos jobs** (`build-and-test` e `integration-tests`) y los dos son
   obligatorios; el de integración tarda más porque levanta un Postgres real.

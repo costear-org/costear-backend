@@ -11,7 +11,7 @@
 # Cada issue bloqueado declara de que depende, en una linea del cuerpo:
 #
 #     Depende de #123                          <- un issue de ESTE repo
-#     Depende de Coste-AR/CosteAR-backend#194  <- un issue de OTRO repo
+#     Depende de costear-org/costear-backend#194  <- un issue de OTRO repo
 #
 # Este barrido recorre los issues abiertos con la etiqueta `bloqueado`, mira si
 # TODAS sus dependencias estan cerradas, y a los que ya no esperan nada les
@@ -51,12 +51,12 @@
 #
 #   - Este barrido solo ESCRIBE en su propio repo. Las etiquetas y el
 #     comentario van sobre issues de aca, que es lo que el GITHUB_TOKEN cubre.
-#   - De los otros repos solo LEE el estado de un issue. `CosteAR-backend` y
-#     `CosteAR-frontend` son publicos, y un token autenticado puede leer un
+#   - De los otros repos solo LEE el estado de un issue. `costear-backend` y
+#     `costear-web` son publicos, y un token autenticado puede leer un
 #     repo publico aunque este fuera de su alcance de escritura. Todas las
 #     dependencias entre repos que existen hoy son frontend -> backend.
 #
-# La excepcion es `CosteAR-admin`, que es PRIVADO: el GITHUB_TOKEN de otro repo
+# La excepcion es `costear-admin`, que es PRIVADO: el GITHUB_TOKEN de otro repo
 # no lo puede leer. Si algun dia un issue depende de uno de admin, esa lectura
 # va a fallar — y este barrido NO ADIVINA: lo deja bloqueado y lo dice en el
 # log. Es preferible un issue que espera de mas a uno que se manda a la cola
@@ -67,7 +67,7 @@
 #
 # Un issue real escribia esto:
 #
-#     Depende de `Coste-AR/CosteAR-backend#194` y `#195`
+#     Depende de `costear-org/costear-backend#194` y `#195`
 #
 # Para una persona es obvio que el `#195` es del backend. Para un parser no lo
 # es: `#195` significa "de este repo" en todos los demas casos. Resolverlo
@@ -159,7 +159,7 @@ jobs:
             while IFS= read -r linea; do
               [ -n "$linea" ] || continue
 
-              # Refs con repo explicito: Coste-AR/CosteAR-backend#194
+              # Refs con repo explicito: costear-org/costear-backend#194
               quals=$(grep -oE '[A-Za-z0-9._-]+/[A-Za-z0-9._-]+#[0-9]+' <<<"$linea" || true)
 
               # Refs sueltos: se buscan DESPUES de borrar los de arriba, o el

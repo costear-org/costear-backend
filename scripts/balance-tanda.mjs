@@ -14,10 +14,10 @@ import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
 
 export const REPOS_DE_COSTEAR = [
-  'Coste-AR/CosteAR-backend',
-  'Coste-AR/CosteAR-frontend',
-  'Coste-AR/CosteAR-admin',
-  'Coste-AR/CosteAR-os',
+  'costear-org/costear-backend',
+  'costear-org/costear-web',
+  'costear-org/costear-admin',
+  'costear-org/costear-os',
 ];
 
 const CI_WORKFLOW = /(?:^|[ _-])(ci|e2e)(?:$|[ _-])|playwright/i;

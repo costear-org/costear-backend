@@ -156,7 +156,7 @@ En la web es el botón por defecto (**Create a merge commit**), así que alcanza
 ## Parte 3 — El merge es automático. La decisión no.
 
 **Actualizado el 30-08-2026.** Hasta esa fecha esta parte decía que el auto-merge era "opcional,
-comodidad, no una regla", y que `CosteAR-admin` no podía tenerlo. Las dos cosas cambiaron.
+comodidad, no una regla", y que `costear-admin` no podía tenerlo. Las dos cosas cambiaron.
 
 Ahora **nadie mergea a mano**. Un PR entra cuando pasan las dos:
 
@@ -171,7 +171,7 @@ gh pr edit 123 --add-label auto-merge   # y ahi entra solo
 
 **Los dos primeros los corre quien hizo el trabajo, agente incluido. El tercero no.** La etiqueta
 la pone Santiago: es donde entra el juicio humano. Un agente llega hasta `ready` y avisa. El
-reparto completo está en `CosteAR-os/ORQUESTACION.md`, que es el canónico.
+reparto completo está en `costear-os/ORQUESTACION.md`, que es el canónico.
 
 ### Por qué una etiqueta y no el verde a secas
 
@@ -185,7 +185,7 @@ auto-mergea. Trabajás tranquilo, y cuando terminaste lo marcás listo.
 ### Por qué un workflow nuestro y no el `--auto` de GitHub
 
 El nativo sólo actúa cuando **algo bloquea** el PR: checks requeridos por la protección de rama.
-`CosteAR-admin` es privado y en plan Free no admite protección, así que ahí el nativo no gatea
+`costear-admin` es privado y en plan Free no admite protección, así que ahí el nativo no gatea
 nada — mergearía al instante, con el CI en rojo o sin haber corrido.
 
 `.github/workflows/auto-merge.yml` **verifica los checks él mismo**, y por eso se comporta igual
